@@ -5,7 +5,8 @@ export const ROBOT_PRESETS = {
     { name: "q2 (Shoulder Pitch)", a: 0.55, alphaDeg: 0, d: 0, thetaOffsetDeg: 0, minDeg: -135, maxDeg: 135 },
     { name: "q3 (Elbow Pitch)", a: 0.45, alphaDeg: 0, d: 0, thetaOffsetDeg: 0, minDeg: -150, maxDeg: 150 }
   ]},
-  abb_irb120: { kind: "dh", label: "ABB IRB 120 (6-Axis + Neural IK)", color: "#ff6600", description: "Compact 6-axis industrial robot (~0.58 m reach) with joint sliders and PyTorch Neural IK pose solver.", joints: [
+  abb_irb120: {
+    parentCompany: "ABB Robotics", kind: "dh", label: "ABB IRB 120 (6-Axis + Neural IK)", color: "#ff6600", description: "Compact 6-axis industrial robot (~0.58 m reach) with joint sliders and PyTorch Neural IK pose solver.", joints: [
     { name: "J1 (Base)", a: 0, alphaDeg: -90, d: 0.29, thetaOffsetDeg: 0, minDeg: -165, maxDeg: 165 },
     { name: "J2 (Shoulder)", a: 0.27, alphaDeg: 0, d: 0, thetaOffsetDeg: -90, minDeg: -110, maxDeg: 110 },
     { name: "J3 (Elbow)", a: 0.07, alphaDeg: -90, d: 0, thetaOffsetDeg: 0, minDeg: -110, maxDeg: 70 },
