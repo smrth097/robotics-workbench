@@ -320,7 +320,7 @@ function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat, s
 
   const hitMesh = new THREE.Mesh(
     new THREE.CylinderGeometry(radius * 1.45, radius * 1.45, Math.max(0.06, length * 1.35), Math.max(10, Math.floor(segs * 0.75))),
-    new THREE.MeshBasicMaterial({ visible: false })
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
   );
   jGroup.add(drum, ringTop, hitMesh);
   if (jointIndex !== null && jointIndex !== undefined) {
@@ -423,7 +423,7 @@ function buildParentCompanyArm(group, modelId, transforms, mainMat, trimMat, ste
       const zAxis = [T[0][2], T[1][2], T[2][2]];
       const r = idx < 3 ? 0.048 : 0.036;
       const len = idx < 3 ? 0.082 : 0.055;
-      addJointHousing(group, pts[idx], zAxis, r, len, mainMat, steelCap, segs, sh);
+      addJointHousing(group, pts[idx], zAxis, r, len, mainMat, steelCap, segs, sh, idx);
     });
     return;
   }
@@ -478,8 +478,7 @@ function buildParentCompanyArm(group, modelId, transforms, mainMat, trimMat, ste
         isTip ? makeAccentMat(0x10b981) : isBase ? darkMetal : mainMat,
         steelCap,
         segs,
-        sh
-      );
+        sh, idx);
     });
     return;
   }
@@ -499,8 +498,7 @@ function buildParentCompanyArm(group, modelId, transforms, mainMat, trimMat, ste
       isTip ? makeAccentMat(0x10b981) : mainMat,
       steelCap,
       segs,
-      sh
-    );
+      sh, idx);
   });
 }
 
