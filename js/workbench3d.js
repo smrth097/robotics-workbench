@@ -117,6 +117,10 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
       activeJointIdx = jointHit.object.userData.jointIndex;
       controls.enabled = false;
       canvas.style.cursor = "grabbing";
+      if (typeof canvas.setPointerCapture === "function") {
+        try { canvas.setPointerCapture(e.pointerId); } catch {}
+      }
+      e.preventDefault();
     }
   });
 
@@ -144,13 +148,25 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
     canvas.style.cursor = hoveringJoint ? "grab" : "";
   });
 
-  canvas.addEventListener("pointerup", (e) => {
-    if (activeJointIdx !== null) {
-      activeJointIdx = null;
-      controls.enabled = true;
-      canvas.style.cursor = "";
-      return;
-    }
+  const finishJointDrag = (e) => {
+      if (activeJointIdx !== null) {
+        activeJointIdx = null;
+        controls.enabled = true;
+        canvas.style.cursor = "";
+        if (e && typeof e.pointerId === "number" && typeof canvas.releasePointerCapture === "function") {
+          try { canvas.releasePointerCapture(e.pointerId); } catch {}
+        }
+        return true;
+      }
+      return false;
+    };
+
+    canvas.addEventListener("pointercancel", (e) => {
+      finishJointDrag(e);
+    });
+
+    canvas.addEventListener("pointerup", (e) => {
+      if (finishJointDrag(e)) return;
     if (e.button !== 0 || Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 4) return;
     const rect = canvas.getBoundingClientRect();
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -302,7 +318,11 @@ function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat, s
   );
   ringTop.castShadow = shadows;
 
-  jGroup.add(drum, ringTop);
+  const hitMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * 1.45, radius * 1.45, Math.max(0.06, length * 1.35), Math.max(10, Math.floor(segs * 0.75))),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+  jGroup.add(drum, ringTop, hitMesh);
   if (jointIndex !== null && jointIndex !== undefined) {
     jGroup.traverse((obj) => { obj.userData.jointIndex = jointIndex; });
   }
