@@ -3,7 +3,6 @@
 An interactive **3D robotics simulation workbench** built with **Three.js** (ES modules), analytical rigid-body kinematics and **RK4** Lagrangian dynamics, Denavit–Hartenberg (**DH**) industrial manipulator models, a **PyTorch Neural IK** training and browser inference pipeline for the **ABB IRB 120**, a built-in beginner curriculum with one-click 3D demos, and automated **GitHub Actions** script execution.
 
 - **Repository:** `https://github.com/smrth097/robotics-workbench`
-- **Live Demo (GitHub Pages):** `https://smrth097.github.io/robotics-workbench/`
 
 ---
 
@@ -95,7 +94,6 @@ python3 ml/train_abb_irb120_ik.py
 
 This updates `ml/abb_irb120_ik_weights.json` with trained weights.
 
-### 3. Enable GitHub Pages
 1. Open `https://github.com/smrth097/robotics-workbench/settings/pages`
 2. Under **Build and deployment → Source**, select **Deploy from a branch**.
 3. Choose **`main`** and **`/ (root)`**, then save.
