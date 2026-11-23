@@ -1,27 +1,50 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { forwardKinematics, computeJacobian, computeManipulability } from "./dynamics.js";
+import { getPerfConfig } from "./perf.js";
 
 let vp = null;
 
-export function initWorkbench3D(canvas, onTargetPick3D) {
-  if (vp) return vp;
+function applyPerfToViewport(v, perf) {
+  if (v.appliedTier === perf.tier) return;
+  v.appliedTier = perf.tier;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.shadowMap.enabled = true;
+  v.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, perf.maxDpr));
+  v.renderer.shadowMap.enabled = perf.shadows;
+  v.keyLight.castShadow = perf.shadows;
+  v.keyLight.shadow.mapSize.set(perf.shadowMapSize, perf.shadowMapSize);
+  v.floorShadow.visible = perf.shadows;
+  v.scene.fog = perf.fog ? new THREE.FogExp2("#080c14", 0.08) : null;
+  v.controls.enableDamping = perf.tier !== "low";
+}
+
+export function initWorkbench3D(canvas, onTargetPick3D, perf) {
+  if (vp) {
+    applyPerfToViewport(vp, perf);
+    return vp;
+  }
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: perf.antialias,
+    powerPreference: perf.tier === "low" ? "low-power" : "high-performance"
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, perf.maxDpr));
+  renderer.shadowMap.enabled = perf.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#080c14");
-  scene.fog = new THREE.FogExp2("#080c14", 0.08);
+  if (perf.fog) {
+    scene.fog = new THREE.FogExp2("#080c14", 0.08);
+  }
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 60);
   camera.up.set(0, 0, 1);
   camera.position.set(1.55, -2.05, 1.45);
 
   const controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
+  controls.enableDamping = perf.tier !== "low";
   controls.dampingFactor = 0.08;
   controls.target.set(0.45, 0.15, 0.25);
   controls.update();
@@ -30,8 +53,8 @@ export function initWorkbench3D(canvas, onTargetPick3D) {
 
   const keyLight = new THREE.DirectionalLight(0xffffff, 1.65);
   keyLight.position.set(2.4, -2.2, 4.2);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.castShadow = perf.shadows;
+  keyLight.shadow.mapSize.set(perf.shadowMapSize, perf.shadowMapSize);
   scene.add(keyLight);
 
   const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.65);
@@ -48,6 +71,7 @@ export function initWorkbench3D(canvas, onTargetPick3D) {
   );
   floorShadow.position.z = -0.002;
   floorShadow.receiveShadow = true;
+  floorShadow.visible = perf.shadows;
   scene.add(floorShadow);
 
   const pickPlane = new THREE.Mesh(
@@ -79,7 +103,7 @@ export function initWorkbench3D(canvas, onTargetPick3D) {
     }
   });
 
-  vp = { renderer, scene, camera, controls, dynamicGroup };
+  vp = { renderer, scene, camera, controls, dynamicGroup, keyLight, floorShadow, appliedTier: perf.tier };
   return vp;
 }
 
@@ -94,31 +118,19 @@ function clearGroup(group) {
   }
 }
 
-function makeBodyMat(colorHex) {
-  return new THREE.MeshStandardMaterial({
-    color: colorHex,
-    roughness: 0.32,
-    metalness: 0.45
-  });
+function makeBodyMat(colorHex, metalness = 0.42, roughness = 0.32) {
+  return new THREE.MeshStandardMaterial({ color: colorHex, roughness, metalness });
 }
 
 function makeDarkMetalMat(colorHex = 0x1e293b) {
-  return new THREE.MeshStandardMaterial({
-    color: colorHex,
-    roughness: 0.42,
-    metalness: 0.78
-  });
+  return new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.42, metalness: 0.78 });
 }
 
 function makeAccentMat(colorHex) {
-  return new THREE.MeshStandardMaterial({
-    color: colorHex,
-    roughness: 0.25,
-    metalness: 0.65
-  });
+  return new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.25, metalness: 0.65 });
 }
 
-function addTriad(group, originArr, R, length = 0.22, radius = 0.0055) {
+function addTriad(group, originArr, R, length = 0.22, radius = 0.0055, segs = 16) {
   const triad = new THREE.Group();
   triad.position.set(...originArr);
   triad.quaternion.setFromRotationMatrix(
@@ -136,13 +148,13 @@ function addTriad(group, originArr, R, length = 0.22, radius = 0.0055) {
     [new THREE.Vector3(0, 0, 1), 0x38bdf8]
   ].forEach(([dir, color]) => {
     const shaft = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * 0.8, radius, length * 0.82, 12).translate(0, length * 0.41, 0),
+      new THREE.CylinderGeometry(radius * 0.8, radius, length * 0.82, Math.max(8, Math.floor(segs * 0.75))).translate(0, length * 0.41, 0),
       new THREE.MeshBasicMaterial({ color })
     );
     shaft.quaternion.setFromUnitVectors(up, dir);
 
     const tip = new THREE.Mesh(
-      new THREE.ConeGeometry(radius * 2.1, length * 0.22, 12).translate(0, length * 0.91, 0),
+      new THREE.ConeGeometry(radius * 2.1, length * 0.22, Math.max(8, Math.floor(segs * 0.75))).translate(0, length * 0.91, 0),
       new THREE.MeshBasicMaterial({ color })
     );
     tip.quaternion.setFromUnitVectors(up, dir);
@@ -152,7 +164,7 @@ function addTriad(group, originArr, R, length = 0.22, radius = 0.0055) {
   group.add(triad);
 }
 
-function addMechanicalLink(group, a, b, radius, bodyMat, trimMat) {
+function addMechanicalLink(group, a, b, radius, bodyMat, trimMat, style = "industrial", segs = 16, shadows = true) {
   const p0 = new THREE.Vector3(...a);
   const p1 = new THREE.Vector3(...b);
   const delta = new THREE.Vector3().subVectors(p1, p0);
@@ -163,70 +175,83 @@ function addMechanicalLink(group, a, b, radius, bodyMat, trimMat) {
   const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
   const mid = p0.clone().addScaledVector(delta, 0.5);
 
-  // Main structural beam
+  if (style === "cobot") {
+    const tube = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * 0.92, radius * 0.92, Math.max(0.01, len * 0.82), segs),
+      bodyMat
+    );
+    tube.position.copy(mid);
+    tube.quaternion.copy(quat);
+    tube.castShadow = shadows;
+    tube.receiveShadow = shadows;
+    group.add(tube);
+    return;
+  }
+
   const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * 0.72, radius * 0.95, Math.max(0.01, len * 0.78), 20),
+    new THREE.CylinderGeometry(radius * 0.72, radius * 0.95, Math.max(0.01, len * 0.78), segs),
     bodyMat
   );
   beam.position.copy(mid);
   beam.quaternion.copy(quat);
-  beam.castShadow = true;
-  beam.receiveShadow = true;
+  beam.castShadow = shadows;
+  beam.receiveShadow = shadows;
   group.add(beam);
 
-  // Twin side reinforcement rails
-  const railGeo = new THREE.BoxGeometry(radius * 0.42, Math.max(0.01, len * 0.64), radius * 1.35);
-  const rail = new THREE.Mesh(railGeo, trimMat);
+  const rail = new THREE.Mesh(
+    new THREE.BoxGeometry(radius * 0.42, Math.max(0.01, len * 0.64), radius * 1.35),
+    trimMat
+  );
   rail.position.copy(mid);
   rail.quaternion.copy(quat);
-  rail.castShadow = true;
+  rail.castShadow = shadows;
   group.add(rail);
 }
 
-function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat) {
+function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat, segs = 16, shadows = true) {
   const jGroup = new THREE.Group();
   jGroup.position.set(...pos);
   const dir = new THREE.Vector3(...axisVec).normalize();
   jGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
 
   const drum = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, length, 24),
+    new THREE.CylinderGeometry(radius, radius, length, segs),
     bodyMat
   );
-  drum.castShadow = true;
-  drum.receiveShadow = true;
+  drum.castShadow = shadows;
+  drum.receiveShadow = shadows;
 
   const ringTop = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, length * 1.14, 20),
+    new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, length * 1.14, Math.max(10, Math.floor(segs * 0.8))),
     capMat
   );
-  ringTop.castShadow = true;
+  ringTop.castShadow = shadows;
 
   jGroup.add(drum, ringTop);
   group.add(jGroup);
 }
 
-function addBasePedestal(group, pos, radius, height, baseMat, accentMat) {
+function addBasePedestal(group, pos, radius, height, baseMat, accentMat, segs = 20, shadows = true) {
   const plinth = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * 1.25, radius * 1.45, height * 0.35, 28).rotateX(Math.PI / 2),
+    new THREE.CylinderGeometry(radius * 1.25, radius * 1.45, height * 0.35, segs).rotateX(Math.PI / 2),
     baseMat
   );
   plinth.position.set(pos[0], pos[1], pos[2] + height * 0.175);
-  plinth.castShadow = true;
-  plinth.receiveShadow = true;
+  plinth.castShadow = shadows;
+  plinth.receiveShadow = shadows;
 
   const turret = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius * 0.92, radius * 1.08, height * 0.68, 28).rotateX(Math.PI / 2),
+    new THREE.CylinderGeometry(radius * 0.92, radius * 1.08, height * 0.68, segs).rotateX(Math.PI / 2),
     accentMat
   );
   turret.position.set(pos[0], pos[1], pos[2] + height * 0.65);
-  turret.castShadow = true;
-  turret.receiveShadow = true;
+  turret.castShadow = shadows;
+  turret.receiveShadow = shadows;
 
   group.add(plinth, turret);
 }
 
-function addEndEffectorTool(group, tipPos, R, trimMat, jawMat) {
+function addEndEffectorTool(group, tipPos, R, trimMat, jawMat, segs = 16, shadows = true) {
   const tool = new THREE.Group();
   tool.position.set(...tipPos);
   tool.quaternion.setFromRotationMatrix(
@@ -238,39 +263,36 @@ function addEndEffectorTool(group, tipPos, R, trimMat, jawMat) {
     )
   );
 
-  // Flange collar along local +Z
   const collar = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.036, 0.042, 0.024, 24).rotateX(Math.PI / 2),
+    new THREE.CylinderGeometry(0.036, 0.042, 0.024, segs).rotateX(Math.PI / 2),
     trimMat
   );
   collar.position.z = 0.012;
-  collar.castShadow = true;
+  collar.castShadow = shadows;
 
-  // Gripper body block
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(0.056, 0.026, 0.036),
     jawMat
   );
   body.position.z = 0.038;
-  body.castShadow = true;
+  body.castShadow = shadows;
 
-  // Left & right fingers
   const fingerGeo = new THREE.BoxGeometry(0.011, 0.016, 0.046);
   const leftFinger = new THREE.Mesh(fingerGeo, trimMat);
   leftFinger.position.set(-0.02, 0, 0.072);
-  leftFinger.castShadow = true;
+  leftFinger.castShadow = shadows;
 
   const rightFinger = new THREE.Mesh(fingerGeo, trimMat);
   rightFinger.position.set(0.02, 0, 0.072);
-  rightFinger.castShadow = true;
+  rightFinger.castShadow = shadows;
 
   tool.add(collar, body, leftFinger, rightFinger);
   group.add(tool);
 }
 
-function addTargetBeacon(group, pos, radius = 0.042) {
+function addTargetBeacon(group, pos, radius = 0.042, segs = 16) {
   const core = new THREE.Mesh(
-    new THREE.SphereGeometry(radius * 0.65, 20, 20),
+    new THREE.SphereGeometry(radius * 0.65, segs, Math.max(10, Math.floor(segs * 0.75))),
     new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
       emissive: 0xd97706,
@@ -281,7 +303,7 @@ function addTargetBeacon(group, pos, radius = 0.042) {
   core.position.set(...pos);
 
   const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(radius * 1.15, radius * 0.12, 12, 32),
+    new THREE.TorusGeometry(radius * 1.15, radius * 0.12, 10, Math.max(16, segs * 2)),
     new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.85 })
   );
   halo.position.set(...pos);
@@ -289,9 +311,107 @@ function addTargetBeacon(group, pos, radius = 0.042) {
   group.add(core, halo);
 }
 
+function buildParentCompanyArm(group, modelId, transforms, mainMat, trimMat, steelCap, darkMetal, perf) {
+  const pts = transforms.map((T) => [T[0][3], T[1][3], T[2][3]]);
+  const segs = perf.curveSegments;
+  const sh = perf.shadows;
+
+  if (modelId === "ur5e") {
+    addBasePedestal(group, pts[0], 0.075, Math.max(0.06, pts[1][2] * 0.4), darkMetal, steelCap, segs, sh);
+    for (let i = 0; i < pts.length - 1; i++) {
+      addMechanicalLink(group, pts[i], pts[i + 1], Math.max(0.022, 0.038 - i * 0.003), mainMat, trimMat, "cobot", segs, sh);
+    }
+    transforms.forEach((T, idx) => {
+      const zAxis = [T[0][2], T[1][2], T[2][2]];
+      const r = idx < 3 ? 0.048 : 0.036;
+      const len = idx < 3 ? 0.082 : 0.055;
+      addJointHousing(group, pts[idx], zAxis, r, len, mainMat, steelCap, segs, sh);
+    });
+    return;
+  }
+
+  if (modelId === "scara_rrpr") {
+    addBasePedestal(group, pts[0], 0.085, 0.07, darkMetal, trimMat, segs, sh);
+    const columnTop = [pts[0][0], pts[0][1], pts[1][2]];
+    addMechanicalLink(group, pts[0], columnTop, 0.052, mainMat, trimMat, "industrial", segs, sh);
+    addJointHousing(group, pts[0], [0, 0, 1], 0.066, 0.08, trimMat, steelCap, segs, sh);
+
+    addMechanicalLink(group, pts[1], pts[2], 0.038, mainMat, trimMat, "industrial", segs, sh);
+    addJointHousing(group, pts[1], [0, 0, 1], 0.056, 0.07, mainMat, steelCap, segs, sh);
+
+    addMechanicalLink(group, pts[2], [pts[3][0], pts[3][1], pts[2][2]], 0.03, mainMat, trimMat, "industrial", segs, sh);
+    addJointHousing(group, pts[2], [0, 0, 1], 0.046, 0.06, mainMat, steelCap, segs, sh);
+
+    addMechanicalLink(group, [pts[3][0], pts[3][1], pts[2][2]], pts[3], 0.016, steelCap, darkMetal, "cobot", segs, sh);
+    return;
+  }
+
+  if (modelId === "abb_irb120" || modelId === "kuka_kr6") {
+    const pedH = modelId === "kuka_kr6" ? 0.11 : 0.09;
+    addBasePedestal(group, pts[0], 0.085, pedH, darkMetal, mainMat, segs, sh);
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const linkRadius = i === 1 ? 0.044 : i === 2 ? 0.036 : Math.max(0.018, 0.032 - i * 0.003);
+      addMechanicalLink(
+        group,
+        pts[i],
+        pts[i + 1],
+        linkRadius,
+        mainMat,
+        modelId === "kuka_kr6" ? darkMetal : trimMat,
+        "industrial",
+        segs,
+        sh
+      );
+    }
+
+    transforms.forEach((T, idx) => {
+      const isBase = idx === 0;
+      const isTip = idx === transforms.length - 1;
+      const zAxis = [T[0][2], T[1][2], T[2][2]];
+      const jRadius = isBase ? 0.072 : idx === 1 ? 0.058 : idx === 2 ? 0.048 : isTip ? 0.036 : 0.032;
+      const jLen = isBase ? 0.095 : idx <= 2 ? 0.082 : 0.048;
+      addJointHousing(
+        group,
+        pts[idx],
+        zAxis,
+        jRadius,
+        jLen,
+        isTip ? makeAccentMat(0x10b981) : isBase ? darkMetal : mainMat,
+        steelCap,
+        segs,
+        sh
+      );
+    });
+    return;
+  }
+
+  addBasePedestal(group, pts[0], 0.08, 0.07, darkMetal, mainMat, segs, sh);
+  for (let i = 0; i < pts.length - 1; i++) {
+    addMechanicalLink(group, pts[i], pts[i + 1], Math.max(0.018, 0.038 - i * 0.0035), mainMat, darkMetal, "industrial", segs, sh);
+  }
+  transforms.forEach((T, idx) => {
+    const isTip = idx === transforms.length - 1;
+    addJointHousing(
+      group,
+      pts[idx],
+      [T[0][2], T[1][2], T[2][2]],
+      isTip ? 0.038 : Math.max(0.026, 0.054 - idx * 0.004),
+      isTip ? 0.035 : 0.07,
+      isTip ? makeAccentMat(0x10b981) : mainMat,
+      steelCap,
+      segs,
+      sh
+    );
+  });
+}
+
 export function renderWorkbench3D(canvas, app, opts) {
-  const { kind, R, p, transforms, armColor, ikTargetPos } = opts;
-  const v = initWorkbench3D(canvas, opts.onTargetPick3D);
+  const perf = getPerfConfig(app?.perfMode || "auto");
+  const { kind, modelId, R, p, transforms, armColor, trimColor, ikTargetPos } = opts;
+  const v = initWorkbench3D(canvas, opts.onTargetPick3D, perf);
+  const segs = perf.curveSegments;
+  const sh = perf.shadows;
 
   const rect = canvas.getBoundingClientRect();
   const w = Math.max(1, Math.floor(rect.width));
@@ -303,7 +423,7 @@ export function renderWorkbench3D(canvas, app, opts) {
   }
 
   clearGroup(v.dynamicGroup);
-  addTriad(v.dynamicGroup, [0, 0, 0], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 0.28, 0.005);
+  addTriad(v.dynamicGroup, [0, 0, 0], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 0.28, 0.005, segs);
 
   if (kind === "planar_2dof") {
     const { L1, L2 } = app.params;
@@ -317,7 +437,7 @@ export function renderWorkbench3D(canvas, app, opts) {
     const steelCap = makeAccentMat(0xcbd5e1);
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry((L1 + L2) * 0.994, (L1 + L2) * 1.006, 72),
+      new THREE.RingGeometry((L1 + L2) * 0.994, (L1 + L2) * 1.006, Math.max(36, segs * 3)),
       new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.22 })
     );
     ring.position.z = -0.003;
@@ -325,11 +445,11 @@ export function renderWorkbench3D(canvas, app, opts) {
 
     if (app.obstacle.enabled) {
       const obs = new THREE.Mesh(
-        new THREE.CylinderGeometry(app.obstacle.r, app.obstacle.r, 0.26, 28).rotateX(Math.PI / 2),
+        new THREE.CylinderGeometry(app.obstacle.r, app.obstacle.r, 0.26, segs).rotateX(Math.PI / 2),
         new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.4, metalness: 0.2, transparent: true, opacity: 0.45 })
       );
       obs.position.set(app.obstacle.x, app.obstacle.y, 0.13);
-      obs.castShadow = true;
+      obs.castShadow = sh;
       v.dynamicGroup.add(obs);
     }
 
@@ -342,19 +462,19 @@ export function renderWorkbench3D(canvas, app, opts) {
       );
     }
 
-    addTargetBeacon(v.dynamicGroup, [app.target.x, app.target.y, zPlane], 0.048);
+    addTargetBeacon(v.dynamicGroup, [app.target.x, app.target.y, zPlane], 0.048, segs);
 
-    addBasePedestal(v.dynamicGroup, [0, 0, 0], 0.075, 0.06, darkMetal, steelCap);
-    addMechanicalLink(v.dynamicGroup, [0, 0, zPlane], [fk.x1, fk.y1, zPlane], 0.046, bodyA, darkMetal);
-    addMechanicalLink(v.dynamicGroup, [fk.x1, fk.y1, zPlane], [fk.x2, fk.y2, zPlane], 0.036, bodyB, darkMetal);
+    addBasePedestal(v.dynamicGroup, [0, 0, 0], 0.075, 0.06, darkMetal, steelCap, segs, sh);
+    addMechanicalLink(v.dynamicGroup, [0, 0, zPlane], [fk.x1, fk.y1, zPlane], 0.046, bodyA, darkMetal, "industrial", segs, sh);
+    addMechanicalLink(v.dynamicGroup, [fk.x1, fk.y1, zPlane], [fk.x2, fk.y2, zPlane], 0.036, bodyB, darkMetal, "industrial", segs, sh);
 
-    addJointHousing(v.dynamicGroup, [0, 0, zPlane], [0, 0, 1], 0.068, 0.095, darkMetal, steelCap);
-    addJointHousing(v.dynamicGroup, [fk.x1, fk.y1, zPlane], [0, 0, 1], 0.056, 0.085, bodyA, steelCap);
-    addJointHousing(v.dynamicGroup, [fk.x2, fk.y2, zPlane], [0, 0, 1], 0.044, 0.072, makeAccentMat(0x10b981), steelCap);
+    addJointHousing(v.dynamicGroup, [0, 0, zPlane], [0, 0, 1], 0.068, 0.095, darkMetal, steelCap, segs, sh);
+    addJointHousing(v.dynamicGroup, [fk.x1, fk.y1, zPlane], [0, 0, 1], 0.056, 0.085, bodyA, steelCap, segs, sh);
+    addJointHousing(v.dynamicGroup, [fk.x2, fk.y2, zPlane], [0, 0, 1], 0.044, 0.072, makeAccentMat(0x10b981), steelCap, segs, sh);
 
     if (app.showEllipse) {
       const ell = computeManipulability(computeJacobian(q1, q2, L1, L2));
-      const ellGeom = new THREE.SphereGeometry(1, 24, 24);
+      const ellGeom = new THREE.SphereGeometry(1, segs, Math.max(10, Math.floor(segs * 0.75)));
       ellGeom.scale(Math.max(0.03, ell.rx * 0.28), Math.max(0.03, ell.ry * 0.28), 0.06);
       const ellMesh = new THREE.Mesh(
         ellGeom,
@@ -369,46 +489,23 @@ export function renderWorkbench3D(canvas, app, opts) {
       v.dynamicGroup.add(ellMesh);
     }
   } else if (kind === "frame") {
-    addBasePedestal(v.dynamicGroup, [0, 0, 0], 0.055, 0.04, makeDarkMetalMat(), makeAccentMat(0xf59e0b));
-    addMechanicalLink(v.dynamicGroup, [0, 0, 0.02], p, 0.016, makeBodyMat(0xf59e0b), makeDarkMetalMat());
-    addJointHousing(v.dynamicGroup, p, [0, 0, 1], 0.032, 0.04, makeAccentMat(0xf59e0b), makeDarkMetalMat());
-    addTriad(v.dynamicGroup, p, R, 0.42, 0.0065);
+    addBasePedestal(v.dynamicGroup, [0, 0, 0], 0.055, 0.04, makeDarkMetalMat(), makeAccentMat(0xf59e0b), segs, sh);
+    addMechanicalLink(v.dynamicGroup, [0, 0, 0.02], p, 0.016, makeBodyMat(0xf59e0b), makeDarkMetalMat(), "industrial", segs, sh);
+    addJointHousing(v.dynamicGroup, p, [0, 0, 1], 0.032, 0.04, makeAccentMat(0xf59e0b), makeDarkMetalMat(), segs, sh);
+    addTriad(v.dynamicGroup, p, R, 0.42, 0.0065, segs);
   } else if (kind === "dh" && Array.isArray(transforms) && transforms.length > 1) {
     const pts = transforms.map((T) => [T[0][3], T[1][3], T[2][3]]);
-    const mainMat = makeBodyMat(armColor || "#ff6600");
+    const isCobot = modelId === "ur5e";
+    const mainMat = makeBodyMat(armColor || "#ff6600", isCobot ? 0.65 : 0.42, isCobot ? 0.24 : 0.32);
+    const trimMat = makeBodyMat(trimColor || "#1e293b", 0.55, 0.35);
     const darkMetal = makeDarkMetalMat(0x1e293b);
     const steelCap = makeAccentMat(0xdbeafe);
 
     if (Array.isArray(ikTargetPos)) {
-      addTargetBeacon(v.dynamicGroup, ikTargetPos, 0.034);
+      addTargetBeacon(v.dynamicGroup, ikTargetPos, 0.034, segs);
     }
 
-    // Grounded base pedestal
-    addBasePedestal(v.dynamicGroup, pts[0], 0.085, Math.max(0.06, pts[1][2] * 0.45), darkMetal, mainMat);
-
-    // Sculpted links between joint frames
-    for (let i = 0; i < pts.length - 1; i++) {
-      const linkRadius = Math.max(0.018, 0.038 - i * 0.0035);
-      addMechanicalLink(v.dynamicGroup, pts[i], pts[i + 1], linkRadius, mainMat, darkMetal);
-    }
-
-    // Rotary joint drums oriented along local joint Z axis
-    transforms.forEach((T, idx) => {
-      const isBase = idx === 0;
-      const isTip = idx === transforms.length - 1;
-      const zAxis = [T[0][2], T[1][2], T[2][2]];
-      const jRadius = isBase ? 0.068 : isTip ? 0.038 : Math.max(0.026, 0.052 - idx * 0.004);
-      const jLen = isBase ? 0.09 : isTip ? 0.035 : Math.max(0.045, 0.075 - idx * 0.005);
-      addJointHousing(
-        v.dynamicGroup,
-        pts[idx],
-        zAxis,
-        jRadius,
-        jLen,
-        isTip ? makeAccentMat(0x10b981) : isBase ? darkMetal : mainMat,
-        steelCap
-      );
-    });
+    buildParentCompanyArm(v.dynamicGroup, modelId, transforms, mainMat, trimMat, steelCap, darkMetal, perf);
 
     const endT = transforms[transforms.length - 1];
     const endR = [
@@ -417,8 +514,8 @@ export function renderWorkbench3D(canvas, app, opts) {
       [endT[2][0], endT[2][1], endT[2][2]]
     ];
 
-    addEndEffectorTool(v.dynamicGroup, pts[pts.length - 1], endR, steelCap, darkMetal);
-    addTriad(v.dynamicGroup, pts[pts.length - 1], endR, 0.18, 0.005);
+    addEndEffectorTool(v.dynamicGroup, pts[pts.length - 1], endR, steelCap, darkMetal, segs, sh);
+    addTriad(v.dynamicGroup, pts[pts.length - 1], endR, 0.18, 0.005, segs);
   }
 
   v.controls.update();
@@ -426,7 +523,7 @@ export function renderWorkbench3D(canvas, app, opts) {
 }
 
 export function renderEnergyPlot(ctx, canvas, history) {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const rect = canvas.getBoundingClientRect();
   if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
     canvas.width = rect.width * dpr;
