@@ -97,7 +97,13 @@
     </aside>
   </main>
   <main id="tab-guide" class="guide-workspace">
-    <div class="guide-hero"><div><h2>3D Robotics Workbench — Beginner-to-Pro Guide</h2><p>Every robot model runs inside a single 3D Three.js workbench.</p></div></div>
+    <div class="guide-hero">
+      <div><h2>3D Robotics Workbench — Beginner-to-Pro Guide</h2><p>Every robot model runs inside a single 3D Three.js workbench.</p></div>
+      <div class="level-pills">
+        <span class="pill-badge">SO(3)</span><span class="pill-badge">SE(3) &amp; DH</span><span class="pill-badge">RK4 &amp; Control</span><span class="pill-badge">Neural IK</span>
+      </div>
+    </div>
+    <h3 class="section-label">One-Click 3D Workbench Demos</h3>
     <section class="demo-grid">
       <article class="demo-card"><span class="tag">Demo 1</span><h3>Zero-Torque Double Pendulum</h3><p>Verifies energy conservation E ≈ K + P in 3D.</p><button class="btn small" data-demo="free_fall">Launch</button></article>
       <article class="demo-card"><span class="tag">Demo 2</span><h3>Gravity Sag vs. Comp</h3><p>Compares Pure PD sag against PD + Gravity Comp.</p><button class="btn small" data-demo="gravity_sag">Launch</button></article>
@@ -107,6 +113,13 @@
       <article class="demo-card"><span class="tag">Demo 6</span><h3>ABB IRB 120 + Neural IK</h3><p>6-axis industrial arm with MLP IK prediction.</p><button class="btn small" data-demo="abb_demo">Launch</button></article>
       <article class="demo-card"><span class="tag">Demo 7</span><h3>4-DOF SCARA</h3><p>RRPR horizontal arm with prismatic Z quill.</p><button class="btn small" data-demo="scara_demo">Launch</button></article>
       <article class="demo-card"><span class="tag">Demo 8</span><h3>Gimbal Lock (θ = 90°)</h3><p>SE(3) frame orientation singularity.</p><button class="btn small" data-demo="gimbal_lock">Launch</button></article>
+    </section>
+    <h3 class="section-label">Core Concepts</h3>
+    <section class="guide-columns">
+      <div class="guide-card"><span class="tag">01 • SO(3)</span><h3>Rotation Matrices</h3><p>Columns hold rotated X, Y, Z axes; p_A = R · p_B.</p><pre class="mini-eq">RᵀR = I , det(R) = +1</pre></div>
+      <div class="guide-card"><span class="tag">02 • SE(3)</span><h3>Euler, Quaternions &amp; Gimbal Lock</h3><p>ZYX pitch at ±90° hits gimbal lock; quaternions and SE(3) avoid it.</p><pre class="mini-eq">T = [ R  p ; 0  1 ]</pre></div>
+      <div class="guide-card"><span class="tag">03 • FK / IK / DH</span><h3>Kinematics &amp; DH Chains</h3><p>Chain link transforms T_{i-1}^i along joint coordinates.</p><pre class="mini-eq">T_0^n = T_0^1 · T_1^2 · ... · T_{n-1}^n</pre></div>
+      <div class="guide-card"><span class="tag">04 • Dynamics &amp; ML</span><h3>Jacobian, RK4 &amp; Neural IK</h3><p>Simulate M(θ)θ̈ + C(θ,θ̇)θ̇ + G(θ) + Bθ̇ = τ and predict IK via MLP.</p><pre class="mini-eq">τ = M(θ)v + C(θ,θ̇)θ̇ + G(θ)</pre></div>
     </section>
   </main>
   <script type="module" src="js/main.js"></script>
