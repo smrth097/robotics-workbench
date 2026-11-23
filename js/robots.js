@@ -242,20 +242,20 @@ export const ROBOT_PRESETS = {
   "scara_rrpr": {
     "kind": "dh",
     "label": "Industrial SCARA (4-DOF RRPR)",
-    "color": "#34d399",
-    "description": "High-speed horizontal pick-and-place arm with rotary joints + vertical Z quill.",
+    "color": "#f8fafc",
+    "description": "Four-axis selective compliance assembly arm with twin horizontal links, vertical quill, and blue trim.",
     "joints": [
       {
-        "name": "J1 (Arm 1)",
+        "name": "J1 Shoulder",
         "a": 0.325,
         "alphaDeg": 0,
-        "d": 0.32,
+        "d": 0.28,
         "thetaOffsetDeg": 0,
         "minDeg": -135,
         "maxDeg": 135
       },
       {
-        "name": "J2 (Arm 2)",
+        "name": "J2 Elbow",
         "a": 0.275,
         "alphaDeg": 180,
         "d": 0,
@@ -264,25 +264,29 @@ export const ROBOT_PRESETS = {
         "maxDeg": 150
       },
       {
-        "name": "J3 (Z Quill)",
+        "name": "J3 Z Quill",
         "a": 0,
         "alphaDeg": 0,
-        "d": 0.15,
+        "d": -0.06,
         "thetaOffsetDeg": 0,
-        "minDeg": 0,
-        "maxDeg": 0.15,
+        "minDeg": -0.15,
+        "maxDeg": 0,
         "isPrismatic": true
       },
       {
-        "name": "J4 (Tool Yaw)",
+        "name": "J4 Tool Yaw",
         "a": 0,
         "alphaDeg": 0,
         "d": 0.05,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -360,
+        "maxDeg": 360
       }
-    ]
+    ],
+    "id": "scara_rrpr",
+    "name": "Epson / Industrial SCARA (4-DOF RRPR)",
+    "parentCompany": "Industrial SCARA (Epson / Fanuc style)",
+    "trimColor": "#2563eb"
   },
   "frame": {
     "kind": "frame",
