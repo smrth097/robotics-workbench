@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Robotics Workbench — Kinematics, Dynamics, Control & Neural IK</title>
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span><h1>3D Robotics Workbench</h1></div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="bench">1. 3D Robotics Workbench</button>
+      <button class="tab-btn" data-tab="guide">2. Beginner Guide &amp; Demos</button>
+    </nav>
+    <div class="header-actions">
+      <button id="btn-pause" class="btn secondary">Pause</button>
+      <button id="btn-reset" class="btn secondary">Reset State</button>
+    </div>
+  </header>
+  <main id="tab-bench" class="workspace active">
+    <section class="panel viewport-panel">
+      <div class="panel-header">
+        <h2 id="bench-title">3D Workbench — 2-DOF Planar Arm (RK4 Dynamics &amp; Control)</h2>
+        <div class="pill-group">
+          <button id="btn-elbow" class="btn small" style="display:none;">Config: Elbow Down</button>
+          <button id="btn-gimbal" class="btn warn small" style="display:none;">Gimbal Lock (θ = 90°)</button>
+          <button id="btn-zero-pose" class="btn secondary small" style="display:none;">Zero Pose</button>
+          <label class="checkbox-label" id="wrap-ellipse"><input type="checkbox" id="chk-ellipse" checked /> Manipulability Ellipsoid</label>
+          <label class="checkbox-label" id="wrap-trail"><input type="checkbox" id="chk-trail" checked /> Tip Trail</label>
+          <label class="checkbox-label" id="wrap-obstacle"><input type="checkbox" id="chk-obstacle" /> 3D Obstacle</label>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="canvas-3d"></canvas>
+        <div id="bench-hint" class="canvas-hint">3D View: Drag to orbit • Scroll to zoom • Tap floor to set (x, y) target</div>
+      </div>
+      <div class="telemetry-strip">
+        <div class="stat"><span id="st1-lbl">Joints θ₁/θ₂</span><strong id="st1-val">0.0° / 0.0°</strong></div>
+        <div class="stat"><span id="st2-lbl">End-Effector</span><strong id="st2-val">0.00, 0.00, 0.00 m</strong></div>
+        <div class="stat"><span id="st3-lbl">Torques (τ₁, τ₂)</span><strong id="st3-val">0.00, 0.00 N·m</strong></div>
+        <div class="stat"><span id="st4-lbl">Manipulability w</span><strong id="st4-val">0.000</strong></div>
+        <div class="stat"><span id="st5-lbl">Tracking Error</span><strong id="st5-val">0.000 m</strong></div>
+      </div>
+    </section>
+    <aside class="panel controls-panel">
+      <div class="control-block">
+        <h3>Robotics Model in 3D Workbench</h3>
+        <select id="robot-model">
+          <option value="planar_2dof" selected>2-DOF Planar Arm (RK4 Dynamics &amp; Control)</option>
+          <option value="spatial_3dof">3-DOF Spatial Arm (Yaw-Pitch-Pitch)</option>
+          <option value="abb_irb120">ABB IRB 120 (6-Axis + Neural IK)</option>
+          <option value="kuka_kr6">KUKA KR 6 R700 (6-Axis Agilus)</option>
+          <option value="ur5e">Universal Robots UR5e (6-Axis Cobot)</option>
+          <option value="scara_rrpr">Industrial SCARA (4-DOF RRPR)</option>
+          <option value="frame">Single SE(3) Coordinate Frame</option>
+        </select>
+        <p id="model-desc" style="font-size:0.75rem;color:#94a3b8;line-height:1.4;"></p>
+      </div>
+      <div id="panel-2dof-controls" class="control-block">
+        <h3>Trajectory &amp; Control Laws</h3>
+        <select id="traj-mode"><option value="manual" selected>Manual (Tap 3D Floor)</option><option value="circle">Circular Path</option><option value="lissajous">Figure-8 (Lissajous)</option></select>
+        <select id="ctrl-mode"><option value="free">Zero-Torque Free Fall</option><option value="pd">Pure PD Control</option><option value="pdg" selected>PD + Gravity Compensation</option><option value="ctc">Computed-Torque (Inverse Dynamics)</option></select>
+        <div class="slider-row"><label>Kp <span id="lbl-kp">60</span></label><input type="range" id="sl-kp" min="5" max="200" value="60" /></div>
+        <div class="slider-row"><label>Kd <span id="lbl-kd">14</span></label><input type="range" id="sl-kd" min="0" max="50" value="14" /></div>
+        <div class="slider-row"><label>Mass m₁ / m₂ <span id="lbl-mass">1.5 / 1.0</span></label><input type="range" id="sl-m2" min="0.2" max="4.0" step="0.1" value="1.0" /></div>
+        <div class="slider-row"><label>Gravity g <span id="lbl-g">9.81</span></label><input type="range" id="sl-g" min="0" max="15" step="0.1" value="9.81" /></div>
+        <div class="slider-row"><label>Friction b <span id="lbl-b">0.15</span></label><input type="range" id="sl-b" min="0" max="2.0" step="0.05" value="0.15" /></div>
+        <h3 style="margin-top:0.75rem;">Energy Telemetry (RK4)</h3>
+        <canvas id="canvas-plot" height="120"></canvas>
+        <div class="legend"><span class="leg k">Kinetic</span><span class="leg p">Potential</span><span class="leg e">Total</span></div>
+      </div>
+      <div id="panel-dh-controls" class="control-block" style="display:none;">
+        <div id="panel-neural-ik" style="display:none;margin-bottom:0.8rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+          <h3>PyTorch Neural IK Pose Target</h3>
+          <div class="slider-row"><label>Target X <span id="lbl-nik-x">0.35</span></label><input type="range" id="sl-nik-x" min="-0.45" max="0.52" step="0.01" value="0.35" /></div>
+          <div class="slider-row"><label>Target Y <span id="lbl-nik-y">0.10</span></label><input type="range" id="sl-nik-y" min="-0.45" max="0.45" step="0.01" value="0.10" /></div>
+          <div class="slider-row"><label>Target Z <span id="lbl-nik-z">0.35</span></label><input type="range" id="sl-nik-z" min="0.05" max="0.72" step="0.01" value="0.35" /></div>
+          <button id="btn-run-neural-ik" class="btn small">Predict Joints with Neural IK</button>
+          <p id="nik-status" style="font-size:0.73rem;color:#94a3b8;margin-top:0.4rem;"></p>
+        </div>
+        <h3>Joint Coordinates</h3><div id="arm-sliders"></div>
+        <h3 style="margin-top:0.75rem;">DH Table</h3><pre id="dh-table-box" class="matrix-box"></pre>
+      </div>
+      <div id="panel-frame-controls" class="control-block" style="display:none;">
+        <h3>ZYX Euler Angles</h3>
+        <div class="slider-row"><label>Yaw ψ <span id="lbl-yaw">30°</span></label><input type="range" id="sl-yaw" min="-180" max="180" value="30" /></div>
+        <div class="slider-row"><label>Pitch θ <span id="lbl-pitch">20°</span></label><input type="range" id="sl-pitch" min="-90" max="90" value="20" /></div>
+        <div class="slider-row"><label>Roll φ <span id="lbl-roll">15°</span></label><input type="range" id="sl-roll" min="-180" max="180" value="15" /></div>
+        <h3 style="margin-top:0.7rem;">Translation p (m)</h3>
+        <div class="slider-row"><label>px <span id="lbl-px">0.6</span></label><input type="range" id="sl-px" min="-1.5" max="1.5" step="0.1" value="0.6" /></div>
+        <div class="slider-row"><label>py <span id="lbl-py">0.4</span></label><input type="range" id="sl-py" min="-1.5" max="1.5" step="0.1" value="0.4" /></div>
+        <div class="slider-row"><label>pz <span id="lbl-pz">0.5</span></label><input type="range" id="sl-pz" min="-1.5" max="1.5" step="0.1" value="0.5" /></div>
+      </div>
+      <div class="control-block"><h3>Math &amp; Kinematics Readout</h3><pre id="math-box" class="matrix-box"></pre></div>
+    </aside>
+  </main>
+  <main id="tab-guide" class="guide-workspace">
+    <div class="guide-hero"><div><h2>3D Robotics Workbench — Beginner-to-Pro Guide</h2><p>Every robot model runs inside a single 3D Three.js workbench.</p></div></div>
+    <section class="demo-grid">
+      <article class="demo-card"><span class="tag">Demo 1</span><h3>Zero-Torque Double Pendulum</h3><p>Verifies energy conservation E ≈ K + P in 3D.</p><button class="btn small" data-demo="free_fall">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 2</span><h3>Gravity Sag vs. Comp</h3><p>Compares Pure PD sag against PD + Gravity Comp.</p><button class="btn small" data-demo="gravity_sag">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 3</span><h3>Elbow-Up vs. Down</h3><p>Toggles dual IK branches for one tip position.</p><button class="btn small" data-demo="elbow_branches">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 4</span><h3>Singularity Ellipsoid</h3><p>Stretches arm near boundary to flatten ellipsoid.</p><button class="btn small" data-demo="singularity_demo">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 5</span><h3>3-DOF Spatial Arm</h3><p>Yaw-Pitch-Pitch 3D kinematic chain.</p><button class="btn small" data-demo="spatial_3dof">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 6</span><h3>ABB IRB 120 + Neural IK</h3><p>6-axis industrial arm with MLP IK prediction.</p><button class="btn small" data-demo="abb_demo">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 7</span><h3>4-DOF SCARA</h3><p>RRPR horizontal arm with prismatic Z quill.</p><button class="btn small" data-demo="scara_demo">Launch</button></article>
+      <article class="demo-card"><span class="tag">Demo 8</span><h3>Gimbal Lock (θ = 90°)</h3><p>SE(3) frame orientation singularity.</p><button class="btn small" data-demo="gimbal_lock">Launch</button></article>
+    </section>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

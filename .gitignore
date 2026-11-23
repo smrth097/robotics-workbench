@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.pyc
+part1.sh
+part2.sh
+setup_all.sh
