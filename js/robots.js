@@ -9,8 +9,8 @@ export const ROBOT_PRESETS = {
   "spatial_3dof": {
     "kind": "dh",
     "label": "3-DOF Spatial Arm (Yaw-Pitch-Pitch)",
-    "color": "#a78bfa",
-    "description": "True 3D workspace (x, y, z) with base yaw q1 + shoulder pitch q2 + elbow pitch q3 via DH transforms.",
+    "color": "#38bdf8",
+    "description": "Three-axis spatial chain combining base yaw with two pitching links in a vertical plane.",
     "joints": [
       {
         "name": "q1 (Base Yaw)",
@@ -39,7 +39,11 @@ export const ROBOT_PRESETS = {
         "minDeg": -150,
         "maxDeg": 150
       }
-    ]
+    ],
+    "id": "spatial_3dof",
+    "name": "3-DOF Spatial Arm (Yaw-Pitch-Pitch)",
+    "parentCompany": "Generic Spatial Articulated",
+    "trimColor": "#0f172a"
   },
   "abb_irb120": {
     "parentCompany": "ABB Robotics",
@@ -292,8 +296,12 @@ export const ROBOT_PRESETS = {
     "kind": "frame",
     "label": "Single SE(3) Coordinate Frame",
     "color": "#f59e0b",
-    "description": "Direct ZYX Euler / Quaternion / Axis-Angle rigid transform T ∈ SE(3) & Gimbal Lock lab.",
-    "joints": []
+    "description": "Standalone rigid-body pose in SE(3) with ZYX Euler angles, quaternion, and axis-angle inspection.",
+    "joints": [],
+    "id": "frame",
+    "name": "Single SE(3) Coordinate Frame",
+    "parentCompany": "Rigid Body Frame Reference",
+    "trimColor": "#1e293b"
   }
 };
 
