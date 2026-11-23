@@ -46,8 +46,8 @@ document.getElementById("btn-run-neural-ik").onclick = () => {
 function buildArmSliders(presetKey) {
   const preset = ROBOT_PRESETS[presetKey], container = document.getElementById("arm-sliders");
   container.innerHTML = "";
-  app.jointValues = preset.joints.map((j) => (j.isPrismatic ? j.minDeg : 0));
-  preset.joints.forEach((j, idx) => {
+  app.jointValues = (Array.isArray(preset?.joints) ? preset.joints : []).map((j) => (j.isPrismatic ? j.minDeg : 0));
+  (Array.isArray(preset?.joints) ? preset.joints : []).forEach((j, idx) => {
     const row = document.createElement("div"); row.className = "slider-row";
     const step = j.isPrismatic ? 0.005 : 1, initVal = app.jointValues[idx], fmtVal = (v) => (j.isPrismatic ? `${v.toFixed(3)} m` : `${Math.round(v)}°`);
     row.innerHTML = `<label>${j.name} <span>${fmtVal(initVal)}</span></label><input type="range" min="${j.minDeg}" max="${j.maxDeg}" step="${step}" value="${initVal}" />`;
@@ -143,11 +143,11 @@ function loop() {
     document.getElementById("st4-val").textContent = `${q.w.toFixed(3)}`;
     document.getElementById("math-box").textContent = `Quat: [${q.w.toFixed(2)}, ${q.x.toFixed(2)}, ${q.y.toFixed(2)}, ${q.z.toFixed(2)}]${Math.abs(pitch)>=89?"\n⚠ GIMBAL LOCK":""}`;
   } else {
-    document.getElementById("dh-table-box").textContent = preset.joints.map((j,i) => `J${i+1}: a=${j.a} α=${j.alphaDeg}° d=${j.isPrismatic?(app.jointValues[i]||0):j.d} θ=${Math.round(j.isPrismatic?0:(app.jointValues[i]||0)+(j.thetaOffsetDeg||0))}°`).join("\n");
+    document.getElementById("dh-table-box").textContent = (Array.isArray(preset?.joints) ? preset.joints : []).map((j,i) => `J${i+1}: a=${j.a} α=${j.alphaDeg}° d=${j.isPrismatic?(app.jointValues[i]||0):j.d} θ=${Math.round(j.isPrismatic?0:(app.jointValues[i]||0)+(j.thetaOffsetDeg||0))}°`).join("\n");
     const transforms = computeDHChain(preset.joints, app.jointValues), endT = transforms[transforms.length - 1];
     const p = [endT[0][3], endT[1][3], endT[2][3]], R = [[endT[0][0],endT[0][1],endT[0][2]],[endT[1][0],endT[1][1],endT[1][2]],[endT[2][0],endT[2][1],endT[2][2]]];
     renderWorkbench3D(canvas3D, app, { kind:"dh", R, p, transforms, armColor:preset.color, ikTargetPos:app.modelKey==="abb_irb120"&&app.nikActive?app.nikTarget:null, onTargetPick3D });
-    document.getElementById("st1-val").textContent = `${preset.joints.length}-DOF`;
+    document.getElementById("st1-val").textContent = `${(Array.isArray(preset?.joints) ? preset.joints.length : 0)}-DOF`;
     document.getElementById("st2-val").textContent = `${p[0].toFixed(2)}, ${p[1].toFixed(2)}, ${p[2].toFixed(2)} m`;
     document.getElementById("math-box").textContent = `Flange p = [${p[0].toFixed(3)}, ${p[1].toFixed(3)}, ${p[2].toFixed(3)}] m`;
   }
