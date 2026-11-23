@@ -19,16 +19,20 @@ const onJointJog = (jointIdx, deltaPixels) => {
   const minV = Number(joint.minDeg ?? -180);
   const maxV = Number(joint.maxDeg ?? 180);
   const curV = Number(app.jointValues[jointIdx] ?? 0);
-  const stepDelta = joint.isPrismatic ? deltaPixels * 0.002 : deltaPixels * 0.85;
+  const stepDelta = joint.isPrismatic ? deltaPixels * 0.003 : deltaPixels * 1.1;
   const nextVal = Math.min(maxV, Math.max(minV, curV + stepDelta));
   app.jointValues[jointIdx] = nextVal;
   app.nikActive = false;
+  window.__jogDebug = { jointIdx, deltaPixels, nextVal, modelKey: app.modelKey, jointValues: [...app.jointValues] };
   const rows = document.querySelectorAll("#arm-sliders .slider-row");
   const row = rows[jointIdx];
   if (row) {
     const input = row.querySelector("input");
     const span = row.querySelector("span");
-    if (input) input.value = String(nextVal);
+    if (input) {
+      input.value = String(nextVal);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
     if (span) span.textContent = joint.isPrismatic ? `${nextVal.toFixed(3)} m` : `${Math.round(nextVal)}°`;
   }
 };
