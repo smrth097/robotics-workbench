@@ -28,10 +28,11 @@ export function getPerfConfig(mode = "auto") {
       shadowMapSize: 512,
       fog: false,
       antialias: false,
-      curveSegments: 12,
-      trailMax: 60,
+      curveSegments: 10,
+      trailMax: 48,
       targetFps: 30,
-      plotEveryNFrames: 3
+      plotEveryNFrames: 3,
+      raycastThrottleMs: 80
     };
   }
 
@@ -39,29 +40,31 @@ export function getPerfConfig(mode = "auto") {
     return {
       tier: "high",
       label: mode === "auto" ? `Auto (High · ${hw.cores}c)` : "High",
-      maxDpr: Math.min(window.devicePixelRatio || 1, 2.0),
+      maxDpr: Math.min(window.devicePixelRatio || 1, 1.5),
       shadows: true,
       shadowMapSize: 1024,
       fog: true,
       antialias: true,
-      curveSegments: 24,
-      trailMax: 220,
+      curveSegments: 18,
+      trailMax: 160,
       targetFps: 60,
-      plotEveryNFrames: 1
+      plotEveryNFrames: 2,
+      raycastThrottleMs: 32
     };
   }
 
   return {
     tier: "balanced",
     label: mode === "auto" ? `Auto (Balanced · ${hw.cores}c)` : "Balanced",
-    maxDpr: Math.min(window.devicePixelRatio || 1, 1.5),
+    maxDpr: Math.min(window.devicePixelRatio || 1, 1.25),
     shadows: true,
     shadowMapSize: 512,
     fog: true,
     antialias: true,
-    curveSegments: 16,
-    trailMax: 120,
+    curveSegments: 14,
+    trailMax: 90,
     targetFps: 60,
-    plotEveryNFrames: 2
+    plotEveryNFrames: 2,
+    raycastThrottleMs: 48
   };
 }

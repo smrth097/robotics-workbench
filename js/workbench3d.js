@@ -32,6 +32,17 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, perf.maxDpr));
   renderer.shadowMap.enabled = perf.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  canvas.addEventListener("webglcontextlost", (e) => {
+    e.preventDefault();
+    if (vp) vp.contextLost = true;
+  }, false);
+  canvas.addEventListener("webglcontextrestored", () => {
+    if (vp) {
+      vp.contextLost = false;
+      vp.appliedTier = null;
+      if (vp.controls) vp.controls.enabled = true;
+    }
+  }, false);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#080c14");
@@ -110,6 +121,7 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
   });
 
   canvas.addEventListener("pointermove", (e) => {
+    if (document.hidden || vp?.contextLost) return;
     if (activeJointIdx !== null && vp?.onJointJog) {
       const dx = e.clientX - lastDragX;
       const dy = e.clientY - lastDragY;
@@ -118,7 +130,12 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
       vp.onJointJog(activeJointIdx, dx - dy);
       return;
     }
+    const now = performance.now();
+    const minGap = vp?.raycastThrottleMs || 48;
+    if (now - (vp?.lastHoverTime || 0) < minGap) return;
+    if (vp) vp.lastHoverTime = now;
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
@@ -145,18 +162,34 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
     }
   });
 
-  vp = { renderer, scene, camera, controls, dynamicGroup, keyLight, floorShadow, appliedTier: perf.tier, onJointJog };
+  vp = { renderer, scene, camera, controls, dynamicGroup, keyLight, floorShadow, appliedTier: perf.tier, onJointJog, contextLost: false, lastHoverTime: 0, raycastThrottleMs: perf.raycastThrottleMs || 48 };
   return vp;
 }
 
-function clearGroup(group) {
-  while (group.children.length > 0) {
-    const c = group.children[0];
-    group.remove(c);
-    if (c.geometry) c.geometry.dispose();
-    if (c.material) {
-      (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => m.dispose());
+function disposeObject3D(obj) {
+  if (!obj) return;
+  if (obj.geometry && typeof obj.geometry.dispose === "function") {
+    obj.geometry.dispose();
+  }
+  const mats = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : [];
+  for (const m of mats) {
+    if (!m || typeof m.dispose !== "function") continue;
+    for (const k of Object.keys(m)) {
+      const val = m[k];
+      if (val && val.isTexture && typeof val.dispose === "function") {
+        val.dispose();
+      }
     }
+    m.dispose();
+  }
+}
+
+function clearGroup(group) {
+  if (!group) return;
+  for (let i = group.children.length - 1; i >= 0; i--) {
+    const child = group.children[i];
+    child.traverse(disposeObject3D);
+    group.remove(child);
   }
 }
 
@@ -455,7 +488,11 @@ export function renderWorkbench3D(canvas, app, opts) {
   const perf = getPerfConfig(app?.perfMode || "auto");
   const { kind, modelId, R, p, transforms, armColor, trimColor, ikTargetPos } = opts;
   const v = initWorkbench3D(canvas, opts.onTargetPick3D, perf, opts.onJointJog);
-  if (vp) vp.onJointJog = opts.onJointJog;
+  if (vp) {
+    vp.onJointJog = opts.onJointJog;
+    vp.raycastThrottleMs = perf.raycastThrottleMs || 48;
+  }
+  if (v?.contextLost || document.hidden) return;
   const segs = perf.curveSegments;
   const sh = perf.shadows;
 
