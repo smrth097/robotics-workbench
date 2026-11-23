@@ -111,10 +111,10 @@ export const ROBOT_PRESETS = {
     "kind": "dh",
     "label": "KUKA KR 6 R700 (6-Axis Agilus)",
     "color": "#f97316",
-    "description": "High-speed 6-axis industrial arm (~0.706 m reach) with compact wrist.",
+    "description": "Six-axis KUKA Agilus arm with KUKA orange and dark charcoal trim.",
     "joints": [
       {
-        "name": "A1 (Base)",
+        "name": "A1 Base",
         "a": 0.025,
         "alphaDeg": -90,
         "d": 0.4,
@@ -123,7 +123,7 @@ export const ROBOT_PRESETS = {
         "maxDeg": 170
       },
       {
-        "name": "A2 (Shoulder)",
+        "name": "A2 Link Arm",
         "a": 0.315,
         "alphaDeg": 0,
         "d": 0,
@@ -132,7 +132,7 @@ export const ROBOT_PRESETS = {
         "maxDeg": 45
       },
       {
-        "name": "A3 (Elbow)",
+        "name": "A3 Arm",
         "a": 0.035,
         "alphaDeg": 90,
         "d": 0,
@@ -141,7 +141,7 @@ export const ROBOT_PRESETS = {
         "maxDeg": 156
       },
       {
-        "name": "A4 (Wrist 1)",
+        "name": "A4 Wrist Roll",
         "a": 0,
         "alphaDeg": -90,
         "d": 0.365,
@@ -150,7 +150,7 @@ export const ROBOT_PRESETS = {
         "maxDeg": 185
       },
       {
-        "name": "A5 (Wrist 2)",
+        "name": "A5 Wrist Pitch",
         "a": 0,
         "alphaDeg": 90,
         "d": 0,
@@ -159,15 +159,19 @@ export const ROBOT_PRESETS = {
         "maxDeg": 120
       },
       {
-        "name": "A6 (Flange)",
+        "name": "A6 Flange",
         "a": 0,
         "alphaDeg": 0,
         "d": 0.08,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -350,
+        "maxDeg": 350
       }
-    ]
+    ],
+    "id": "kuka_kr6",
+    "name": "KUKA KR 6 R700 (6-Axis Agilus)",
+    "parentCompany": "KUKA",
+    "trimColor": "#1e293b"
   },
   "ur5e": {
     "kind": "dh",
