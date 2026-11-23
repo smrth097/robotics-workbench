@@ -18,7 +18,7 @@ function applyPerfToViewport(v, perf) {
   v.controls.enableDamping = perf.tier !== "low";
 }
 
-export function initWorkbench3D(canvas, onTargetPick3D, perf) {
+export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
   if (vp) {
     applyPerfToViewport(vp, perf);
     return vp;
@@ -87,11 +87,53 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf) {
   const pointer = new THREE.Vector2();
   let downPos = { x: 0, y: 0 };
 
+  let activeJointIdx = null;
+  let lastDragX = 0;
+  let lastDragY = 0;
+
   canvas.addEventListener("pointerdown", (e) => {
     downPos = { x: e.clientX, y: e.clientY };
+    lastDragX = e.clientX;
+    lastDragY = e.clientY;
+    if (e.button !== 0 || !vp?.onJointJog) return;
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(dynamicGroup.children, true);
+    const jointHit = hits.find((h) => Number.isInteger(h.object?.userData?.jointIndex));
+    if (jointHit) {
+      activeJointIdx = jointHit.object.userData.jointIndex;
+      controls.enabled = false;
+      canvas.style.cursor = "grabbing";
+    }
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (activeJointIdx !== null && vp?.onJointJog) {
+      const dx = e.clientX - lastDragX;
+      const dy = e.clientY - lastDragY;
+      lastDragX = e.clientX;
+      lastDragY = e.clientY;
+      vp.onJointJog(activeJointIdx, dx - dy);
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(dynamicGroup.children, true);
+    const hoveringJoint = hits.some((h) => Number.isInteger(h.object?.userData?.jointIndex));
+    canvas.style.cursor = hoveringJoint ? "grab" : "";
   });
 
   canvas.addEventListener("pointerup", (e) => {
+    if (activeJointIdx !== null) {
+      activeJointIdx = null;
+      controls.enabled = true;
+      canvas.style.cursor = "";
+      return;
+    }
     if (e.button !== 0 || Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 4) return;
     const rect = canvas.getBoundingClientRect();
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -103,7 +145,7 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf) {
     }
   });
 
-  vp = { renderer, scene, camera, controls, dynamicGroup, keyLight, floorShadow, appliedTier: perf.tier };
+  vp = { renderer, scene, camera, controls, dynamicGroup, keyLight, floorShadow, appliedTier: perf.tier, onJointJog };
   return vp;
 }
 
@@ -208,7 +250,7 @@ function addMechanicalLink(group, a, b, radius, bodyMat, trimMat, style = "indus
   group.add(rail);
 }
 
-function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat, segs = 16, shadows = true) {
+function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat, segs = 16, shadows = true, jointIndex = null) {
   const jGroup = new THREE.Group();
   jGroup.position.set(...pos);
   const dir = new THREE.Vector3(...axisVec).normalize();
@@ -228,6 +270,9 @@ function addJointHousing(group, pos, axisVec, radius, length, bodyMat, capMat, s
   ringTop.castShadow = shadows;
 
   jGroup.add(drum, ringTop);
+  if (jointIndex !== null && jointIndex !== undefined) {
+    jGroup.traverse((obj) => { obj.userData.jointIndex = jointIndex; });
+  }
   group.add(jGroup);
 }
 
@@ -409,7 +454,8 @@ function buildParentCompanyArm(group, modelId, transforms, mainMat, trimMat, ste
 export function renderWorkbench3D(canvas, app, opts) {
   const perf = getPerfConfig(app?.perfMode || "auto");
   const { kind, modelId, R, p, transforms, armColor, trimColor, ikTargetPos } = opts;
-  const v = initWorkbench3D(canvas, opts.onTargetPick3D, perf);
+  const v = initWorkbench3D(canvas, opts.onTargetPick3D, perf, opts.onJointJog);
+  if (vp) vp.onJointJog = opts.onJointJog;
   const segs = perf.curveSegments;
   const sh = perf.shadows;
 

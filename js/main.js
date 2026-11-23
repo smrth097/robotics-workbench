@@ -8,6 +8,25 @@ import { loadNeuralIK, predictABBJointsDeg } from "./neural_ik.js";
 
 const app = { paused:false, elbowUp:false, showEllipse:true, showTrail:true, simTime:0, trajMode:"manual", params:{m1:1.5,m2:1.0,L1:1.0,L2:0.85,g:9.81,b:0.15}, ctrl:{mode:"pdg",kp:60,kd:14}, state:[0.5,0.6,0,0], manualTarget:{x:1.1,y:0.7}, target:{x:1.1,y:0.7}, obstacle:{enabled:false,x:0.95,y:0.45,r:0.24}, trail:[], energyHistory:[], lastTau:[0,0], modelKey:"planar_2dof", jointValues:[], neuralIKModel:null, nikTarget:[0.35,0.10,0.35], nikActive:false };
 const canvas3D = document.getElementById("canvas-3d"), canvasPlot = document.getElementById("canvas-plot"), ctxPlot = canvasPlot.getContext("2d");
+const onJointJog = (jointIdx, deltaPixels) => {
+  const preset = ROBOT_PRESETS[app.modelKey];
+  const joint = preset?.joints?.[jointIdx];
+  if (!joint || !Array.isArray(app.jointValues) || app.jointValues[jointIdx] === undefined) return;
+  const minV = Number(joint.minDeg ?? -180);
+  const maxV = Number(joint.maxDeg ?? 180);
+  const stepDelta = joint.isPrismatic ? deltaPixels * 0.001 : deltaPixels * 0.6;
+  const nextVal = Math.min(maxV, Math.max(minV, app.jointValues[jointIdx] + stepDelta));
+  app.jointValues[jointIdx] = nextVal;
+  app.nikActive = false;
+  const rows = document.querySelectorAll("#arm-sliders .slider-row");
+  const row = rows[jointIdx];
+  if (row) {
+    const input = row.querySelector("input");
+    const span = row.querySelector("span");
+    if (input) input.value = nextVal;
+    if (span) span.textContent = joint.isPrismatic ? `${nextVal.toFixed(3)} m` : `${Math.round(nextVal)}°`;
+  }
+};
 loadNeuralIK().then((m) => { app.neuralIKModel = m; document.getElementById("nik-status").textContent = `Loaded ${m.model}.`; }).catch(() => {});
 
 function switchTab(tabName) {
