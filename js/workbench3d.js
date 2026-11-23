@@ -125,8 +125,8 @@ export function initWorkbench3D(canvas, onTargetPick3D, perf, onJointJog) {
   });
 
   canvas.addEventListener("pointermove", (e) => {
-    if (document.hidden || vp?.contextLost) return;
-    if (activeJointIdx !== null && vp?.onJointJog) {
+    if (vp?.contextLost) return;
+    if (activeJointIdx !== null && typeof vp?.onJointJog === "function") {
       const dx = e.clientX - lastDragX;
       const dy = e.clientY - lastDragY;
       lastDragX = e.clientX;

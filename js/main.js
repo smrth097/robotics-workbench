@@ -10,12 +10,17 @@ const app = { paused:false, elbowUp:false, showEllipse:true, showTrail:true, sim
 const canvas3D = document.getElementById("canvas-3d"), canvasPlot = document.getElementById("canvas-plot"), ctxPlot = canvasPlot.getContext("2d");
 const onJointJog = (jointIdx, deltaPixels) => {
   const preset = ROBOT_PRESETS[app.modelKey];
-  const joint = preset?.joints?.[jointIdx];
-  if (!joint || !Array.isArray(app.jointValues) || app.jointValues[jointIdx] === undefined) return;
+  const joints = Array.isArray(preset?.joints) ? preset.joints : [];
+  const joint = joints[jointIdx];
+  if (!joint) return;
+  if (!Array.isArray(app.jointValues) || app.jointValues.length !== joints.length) {
+    app.jointValues = joints.map((j) => (j.isPrismatic ? Number(j.minDeg ?? 0) : 0));
+  }
   const minV = Number(joint.minDeg ?? -180);
   const maxV = Number(joint.maxDeg ?? 180);
-  const stepDelta = joint.isPrismatic ? deltaPixels * 0.001 : deltaPixels * 0.6;
-  const nextVal = Math.min(maxV, Math.max(minV, app.jointValues[jointIdx] + stepDelta));
+  const curV = Number(app.jointValues[jointIdx] ?? 0);
+  const stepDelta = joint.isPrismatic ? deltaPixels * 0.002 : deltaPixels * 0.85;
+  const nextVal = Math.min(maxV, Math.max(minV, curV + stepDelta));
   app.jointValues[jointIdx] = nextVal;
   app.nikActive = false;
   const rows = document.querySelectorAll("#arm-sliders .slider-row");
@@ -23,7 +28,7 @@ const onJointJog = (jointIdx, deltaPixels) => {
   if (row) {
     const input = row.querySelector("input");
     const span = row.querySelector("span");
-    if (input) input.value = nextVal;
+    if (input) input.value = String(nextVal);
     if (span) span.textContent = joint.isPrismatic ? `${nextVal.toFixed(3)} m` : `${Math.round(nextVal)}°`;
   }
 };
