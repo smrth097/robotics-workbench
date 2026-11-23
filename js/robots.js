@@ -176,17 +176,17 @@ export const ROBOT_PRESETS = {
   "ur5e": {
     "kind": "dh",
     "label": "Universal Robots UR5e (6-Axis Cobot)",
-    "color": "#38bdf8",
-    "description": "6-axis collaborative manipulator (~0.85 m reach) with shoulder & wrist offsets.",
+    "color": "#93c5fd",
+    "description": "Six-axis collaborative cobot from Universal Robots with silver-blue joint barrels.",
     "joints": [
       {
         "name": "Base",
         "a": 0,
         "alphaDeg": 90,
-        "d": 0.163,
+        "d": 0.1625,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -360,
+        "maxDeg": 360
       },
       {
         "name": "Shoulder",
@@ -194,12 +194,12 @@ export const ROBOT_PRESETS = {
         "alphaDeg": 0,
         "d": 0,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -360,
+        "maxDeg": 360
       },
       {
         "name": "Elbow",
-        "a": -0.392,
+        "a": -0.3922,
         "alphaDeg": 0,
         "d": 0,
         "thetaOffsetDeg": 0,
@@ -210,30 +210,34 @@ export const ROBOT_PRESETS = {
         "name": "Wrist 1",
         "a": 0,
         "alphaDeg": 90,
-        "d": 0.133,
+        "d": 0.1333,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -360,
+        "maxDeg": 360
       },
       {
         "name": "Wrist 2",
         "a": 0,
         "alphaDeg": -90,
-        "d": 0.1,
+        "d": 0.0997,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -360,
+        "maxDeg": 360
       },
       {
-        "name": "Tool Flange",
+        "name": "Wrist 3",
         "a": 0,
         "alphaDeg": 0,
-        "d": 0.1,
+        "d": 0.0996,
         "thetaOffsetDeg": 0,
-        "minDeg": -180,
-        "maxDeg": 180
+        "minDeg": -360,
+        "maxDeg": 360
       }
-    ]
+    ],
+    "id": "ur5e",
+    "name": "Universal Robots UR5e (6-Axis Cobot)",
+    "parentCompany": "Universal Robots",
+    "trimColor": "#cbd5e1"
   },
   "scara_rrpr": {
     "kind": "dh",
