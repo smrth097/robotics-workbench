@@ -179,3 +179,26 @@ function loop() {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+function applyWorkbenchPerfTier(tier) {
+  const mode = ["ultra", "balanced", "lite"].includes(tier) ? tier : "balanced";
+  try { localStorage.setItem("wb_perf_tier", mode); } catch (_) {}
+  const dpr = mode === "ultra" ? Math.min(window.devicePixelRatio || 1, 2) : mode === "balanced" ? Math.min(window.devicePixelRatio || 1, 1.5) : 1;
+  const c = document.querySelector("canvas");
+  if (c && c.__renderer && typeof c.__renderer.setPixelRatio === "function") c.__renderer.setPixelRatio(dpr);
+  window.dispatchEvent(new CustomEvent("wb:perf-tier-change", { detail: { tier: mode, pixelRatio: dpr } }));
+  return mode;
+}
+window.__wbTools = Object.assign(window.__wbTools || {}, {
+  setPerfTier: applyWorkbenchPerfTier,
+  getPerfTier: () => document.getElementById("perfTierSelect")?.value || "balanced"
+});
+window.addEventListener("DOMContentLoaded", () => {
+  const sel = document.getElementById("perfTierSelect");
+  if (!sel) return;
+  let saved = "balanced";
+  try { saved = localStorage.getItem("wb_perf_tier") || "balanced"; } catch (_) {}
+  if (["ultra", "balanced", "lite"].includes(saved)) sel.value = saved;
+  applyWorkbenchPerfTier(sel.value);
+  sel.addEventListener("change", (e) => applyWorkbenchPerfTier(e.target.value));
+});

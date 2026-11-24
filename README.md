@@ -1,99 +1,57 @@
 # Robotics Workbench
 
-An interactive **3D robotics simulation workbench** built with **Three.js** (ES modules), analytical rigid-body kinematics and **RK4** Lagrangian dynamics, Denavit–Hartenberg (**DH**) industrial manipulator models, a **PyTorch Neural IK** training and browser inference pipeline for the **ABB IRB 120**, a built-in beginner curriculum with one-click 3D demos, and automated **GitHub Actions** script execution.
+> **Live Demo:** https://smrth097.github.io/robotics-workbench/  
+> **Interactive User & Lab Guide:** https://smrth097.github.io/robotics-workbench/guide.html
 
----
+Interactive 3D robotics kinematics, trajectory planning, and hardware-bridge workbench built with vanilla ES modules and Three.js—running zero-build directly on GitHub Pages.
+
+## Supported Robot Presets
+
+| Preset | DOF | Kinematics / Reach | Typical Use Case |
+| :--- | :---: | :--- | :--- |
+| **ABB IRB-Style 6-Axis Arm** | 6 | Articulated spherical-wrist manipulator | Pick-and-place, orientation control, singularity inspection |
+| **UR5e Collaborative Arm** | 6 | Non-spherical wrist cobot geometry | Smooth quintic waypoint trajectories, lab DH verification |
+| **Planar / Articulated Lab Rig** | 3-4 | Reduced-DOF planar & spatial testbed | Forward/inverse kinematics verification and student labs |
 
 ## Key Features
 
-### 1. 3D Mechanical Viewport (`js/workbench3d.js`)
-- Interactive **Three.js** scene with orbit, pan, zoom, soft shadows, and coordinate axis triads (`X` red, `Y` green, `Z` blue).
-- Multi-part mechanical link assemblies featuring base pedestals, joint drums oriented along joint axes, structural link beams with reinforcement rails, target beacons, and a tool flange/gripper assembly on DH chains.
-- Click/tap on the 3D workspace floor to set planar `(x, y)` targets when in manual trajectory mode.
+- **Real-Time 3D Viewport & Direct Joint Jogging:** Click-and-drag robot links directly in the Three.js scene via raycasting or fine-tune joint angles using the control sliders.
+- **Visible Performance Mode Selector:** Switch dynamically between **Ultra**, **Balanced**, and **Lite** modes from the top-right bar to scale pixel ratio and frame budget.
+- **Motion & Stability Analysis:** Quintic polynomial waypoint sampling, joint-space interpolation, and Center-of-Mass (CoM) support-polygon projection.
+- **Model & Hardware Exports:** Export **URDF** XML and **Denavit-Hartenberg (DH)** JSON definitions, shareable URL hash states, and serial/WebSocket bridge hooks.
+- **Beginner-to-Pro Guide (`guide.html` & `GUIDE.md`):** Setup, joint jogging, trajectory planning, performance modes, exports, and browser console debugging.
 
-### 2. Kinematics, Dynamics & Control (`js/math.js`, `js/dynamics.js`, `js/controllers.js`, `js/trajectory.js`)
-- **2-DOF Planar Arm:**
-  - Forward kinematics, analytical 2-link inverse kinematics with **Elbow-Up / Elbow-Down** branch selection, and optional **3D obstacle** target deflection.
-  - Analytical **Jacobian $J(q)$**, **manipulability ellipsoid**, manipulability index $w$, and condition number $\kappa(J)$.
-  - Nonlinear equations of motion integrated via a 4th-order **Runge–Kutta (RK4)** solver:
-    $$M(q)\ddot{q} + C(q,\dot{q})\dot{q} + G(q) + B\dot{q} = \tau$$
-  - Real-time energy telemetry plot tracking kinetic energy ($K$), potential energy ($P$), and total energy ($E$).
-  - Controllers: **Zero-Torque Free Fall**, **Pure PD Control**, **PD + Gravity Compensation**, and **Computed-Torque (Inverse Dynamics)**.
-  - Trajectory modes: **Manual**, **Circular Path**, and **Figure-8 (Lissajous)**.
-- **Spatial Frames & Transforms:**
-  - **ZYX Euler angles**, **unit quaternions**, **axis-angle** representations, $4\times 4$ homogeneous transforms $T \in SE(3)$, and a **Gimbal Lock ($\theta = 90^\circ$)** demonstration.
-
-### 3. Industrial & Spatial DH Manipulators (`js/robots.js`)
-- **3-DOF Spatial Arm (Yaw–Pitch–Pitch)**
-- **ABB IRB 120** (6-axis industrial arm with integrated **Neural IK** pose-to-joint prediction)
-- **KUKA KR 6 R700** (6-axis Agilus preset)
-- **Universal Robots UR5e** (6-axis collaborative arm preset)
-- **Industrial SCARA (4-DOF RRPR)** (rotary joints, prismatic Z quill, and tool yaw)
-- **Single SE(3) Coordinate Frame**
-
-### 4. PyTorch Neural IK Pipeline (`ml/train_abb_irb120_ik.py`, `js/neural_ik.js`, `ml/abb_irb120_ik_weights.json`)
-- Generates joint configurations within ABB IRB 120 limits and computes forward kinematics using a PyTorch DH chain.
-- Predicts $(\sin q_i, \cos q_i)$ joint angle encodings via an MLP trained with angle, sine/cosine, and forward-kinematics 3D position losses, then exports weights and normalization statistics to `ml/abb_irb120_ik_weights.json`.
-- Runs lightweight matrix-vector inference (`SiLU` activations) directly in the browser via `js/neural_ik.js` with live millimeter tip-error feedback.
-
-### 5. Beginner Guide, Demos & Automation (`index.html`, `.github/workflows/run-update-script.yml`, `scripts/update.sh`)
-- **Beginner Guide & Demos Tab:** Includes 8 one-click 3D workbench demos and foundational reference cards covering $SO(3)$, $SE(3)$ / gimbal lock, FK/IK/DH chains, and Jacobians / RK4 / Neural IK.
-- **GitHub Actions Auto-Update Workflow:** Executes `scripts/update.sh` (or a specified script via `workflow_dispatch`) and commits/pushes changes back to `main`.
-
----
-
-## Repository Structure
+## System Architecture
 
 ```text
 robotics-workbench/
-├── .github/workflows/
-│   └── run-update-script.yml      # CI workflow to run update scripts & auto-commit
-├── css/
-│   └── styles.css                 # Dark workbench styling & responsive layout
-├── js/
-│   ├── controllers.js             # Free, PD, PD+G, and Computed-Torque control laws
-│   ├── dynamics.js                # 2-DOF FK/IK, Jacobian, manipulability & RK4 solver
-│   ├── main.js                    # Application state, UI bindings & animation loop
-│   ├── math.js                    # DH transforms, SO(3)/SE(3), Euler, quat & axis-angle
-│   ├── neural_ik.js               # Browser inference loader & MLP predictor for ABB IRB 120
-│   ├── robots.js                  # DH joint tables & metadata for supported models
-│   ├── trajectory.js              # Manual, circular, and Lissajous trajectory generators
-│   └── workbench3d.js             # Three.js mechanical renderer & energy canvas plot
-├── ml/
-│   ├── abb_irb120_ik_weights.json # Exported Neural IK weights & normalization metadata
-│   └── train_abb_irb120_ik.py     # PyTorch DH data generator & Neural IK trainer
-├── scripts/
-│   └── update.sh                  # Repository update script executed locally or in CI
-├── .gitignore
-├── index.html                     # 3D Workbench & Beginner Guide UI
-├── LICENSE                        # MIT License
-└── README.md
-
+├── index.html          # Main 3D workbench UI, viewport canvas, controls & performance selector
+├── guide.html          # Beginner-to-pro interactive documentation page
+├── GUIDE.md            # Markdown technical reference
+├── styles.css          # Layout, panel styling, responsive controls
+└── js/
+    ├── main.js         # UI bindings, preset switching, exports, URL hash & __wbTools API
+    ├── workbench3d.js  # Three.js scene, camera rig, robot hierarchy & raycast joint dragging
+    ├── perf.js         # Frame timing monitor & dynamic quality/DPR tier controller
+    └── ...             # Kinematics, motion planner, and bridge helper modules
 ```
 
-## Local Setup & Usage
+## `window.__wbTools` Console API
 
-### 1. Run the 3D Workbench Locally
-From the repository root (`robotics-workbench`):
+Open DevTools (`F12` -> **Console**) on the live workbench to inspect or control state via `window.__wbTools`:
+
+```js
+console.log(window.__wbTools);
+window.__wbTools?.setPerfTier?.("balanced");
+window.__wbTools?.exportDH?.();
+window.__wbTools?.exportURDF?.();
+```
+
+## Local Development & Verification
+
+Serve over HTTP rather than `file://` because the app uses `<script type="module">`:
 
 ```bash
-python3 -m http.server 8080 --bind 127.0.0.1
+for f in js/*.js; do echo "=== $f ==="; node --check "$f"; done
+python3 -m http.server 8080
 ```
-
-Open `http://127.0.0.1:8080` in your browser.
-
-### 2. Train the ABB IRB 120 Neural IK Model (Optional)
-Requires Python with `torch` and `numpy` installed:
-
-```bash
-pip install torch numpy
-python3 ml/train_abb_irb120_ik.py
-```
-
-This updates `ml/abb_irb120_ik_weights.json` with trained weights.
-
----
-
-## License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.

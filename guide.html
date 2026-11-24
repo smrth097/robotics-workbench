@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robotics Workbench — Detailed Guide</title>
+  <link rel="icon" href="data:image/svg+xml," />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    body { overflow-y: auto; height: auto; min-height: 100vh; padding: 24px 16px 64px; }
+    .g-wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 18px; }
+    .g-card { background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.22); border-radius: 14px; padding: 20px 24px; }
+    .g-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .g-btn { padding: 8px 14px; border-radius: 8px; background: #38bdf8; color: #04121d; text-decoration: none; font-weight: 600; }
+    pre { background: rgba(2,6,23,0.9); padding: 12px; border-radius: 8px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <main class="g-wrap">
+    <section class="g-card g-top">
+      <div><h1>Robotics Workbench Guide</h1><p>Setup, performance modes, kinematics, exports, and console debugging.</p></div>
+      <a class="g-btn" href="./index.html">Back to Workbench</a>
+    </section>
+    <section class="g-card"><h2>Setup &amp; Local Preview</h2><p>Run <code>python3 -m http.server 8080</code> and open <code>http://localhost:8080</code>. Validate JS with <code>node --check</code> before pushing.</p></section>
+    <section class="g-card"><h2>Performance Mode Selection</h2><p>Use the <strong>Perf</strong> dropdown in the top-right bar to switch between <strong>Ultra</strong>, <strong>Balanced</strong>, and <strong>Lite</strong> rendering modes.</p></section>
+    <section class="g-card"><h2>Exports &amp; Console Debugging</h2><p>Export URDF XML or DH JSON from the controls, and inspect <code>window.__wbTools</code> in DevTools Console (<code>F12</code>).</p><pre><code>window.__wbTools
+window.__wbTools?.setPerfTier?.("balanced")</code></pre></section>
+  </main>
+</body>
+</html>
