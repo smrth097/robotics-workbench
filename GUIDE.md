@@ -20,3 +20,8 @@
 - **10-22 min (Presets, Reach & CoM):** Switch presets, pose the arm at full reach and compact configurations, and check joint limits and CoM stability.
 - **22-34 min (Quintic Motion & Exports):** Sample quintic waypoints for smooth motion, then export URDF XML and DH JSON and inspect joint/link entries.
 - **34-45 min (Console & Syntax Check):** Inspect `window.__wbTools` in Chrome DevTools Console (`F12`), call `window.__wbTools?.getPerfState?.()`, and confirm `node --check js/*.js` passes.
+
+## Demos & Interactive Examples
+- **6-DOF Joint & Reach Demo:** Jog joints via sliders or direct 3D link dragging.
+- **Quintic Trajectory Demo:** Sample smooth joint trajectories across waypoints.
+- **CoM & Export Demo:** Inspect CoM stability and export URDF XML or DH JSON.
