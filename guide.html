@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Robotics Workbench — Detailed Guide</title>
+  <title>Robotics Workbench — Beginner-to-Pro Guide</title>
   <link rel="icon" href="data:image/svg+xml," />
   <style>
     * { box-sizing: border-box; }
@@ -12,42 +12,48 @@
     .g-wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 18px; }
     .g-card { background: rgba(15, 23, 42, 0.94); border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 14px; padding: 20px 24px; }
     .g-card h1, .g-card h2, .g-card h3 { margin: 0 0 8px; color: #f8fafc; }
-    .g-card p { margin: 0; color: #cbd5e1; }
+    .g-card p, .g-card ul { margin: 0; color: #cbd5e1; }
     .g-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
     .g-top > div { flex: 1 1 260px; min-width: 0; }
     .g-btn { display: inline-flex; align-items: center; padding: 9px 15px; border-radius: 8px; background: #38bdf8; color: #04121d; text-decoration: none; font-weight: 700; font-size: 14px; white-space: nowrap; flex-shrink: 0; }
-    .g-btn:hover { background: #7dd3fc; }
-    code { background: rgba(30, 41, 59, 0.9); color: #7dd3fc; padding: 2px 6px; border-radius: 5px; font-size: 0.92em; }
+    .g-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+    .g-box { background: rgba(30, 41, 59, 0.72); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 10px; padding: 14px; }
+    ul { padding-left: 20px; margin-top: 8px; }
+    li { margin-bottom: 6px; }
+    code { background: rgba(30, 41, 59, 0.9); color: #7dd3fc; padding: 2px 6px; border-radius: 5px; }
     pre { background: #020617; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow-x: auto; border: 1px solid rgba(148, 163, 184, 0.2); margin: 10px 0 0; }
     pre code { background: none; color: inherit; padding: 0; }
-    ul { margin: 8px 0 0; padding-left: 20px; color: #cbd5e1; }
-    li { margin-bottom: 6px; }
   </style>
 </head>
 <body>
   <main class="g-wrap">
     <section class="g-card g-top">
       <div>
-        <h1>Robotics Workbench Guide</h1>
-        <p>Setup, performance modes, kinematics, exports, and browser console debugging.</p>
+        <h1>Robotics Workbench — Beginner-to-Pro Guide</h1>
+        <p>Setup, joint jogging, performance modes, trajectory/CoM checks, exports, and console debugging.</p>
       </div>
       <a class="g-btn" href="./index.html">Back to Workbench</a>
     </section>
     <section class="g-card">
-      <h2>Setup &amp; Local Preview</h2>
-      <p>Serve over HTTP rather than <code>file://</code> because the app uses native ES modules.</p>
-      <pre><code>for f in js/*.js; do node --check "$f"; done
-python3 -m http.server 8080</code></pre>
+      <h2>1. Beginner Setup &amp; Viewport Controls</h2>
+      <div class="g-grid">
+        <div class="g-box"><h3>Camera</h3><p>Left-drag empty space to orbit, right-drag or two-finger drag to pan, scroll or pinch to zoom.</p></div>
+        <div class="g-box"><h3>Joint Jogging</h3><p>Drag links directly in 3D or adjust joint sliders within mechanical limits.</p></div>
+        <div class="g-box"><h3>Performance Modes</h3><p>Pick <strong>Ultra</strong>, <strong>Balanced</strong>, or <strong>Lite</strong> from the <strong>Perf</strong> selector in the bottom-right corner.</p></div>
+      </div>
     </section>
     <section class="g-card">
-      <h2>Performance Mode Selection</h2>
-      <p>Use the <strong>Perf</strong> dropdown in the workbench bar to switch between <strong>Ultra</strong>, <strong>Balanced</strong>, and <strong>Lite</strong> rendering modes based on your GPU and battery needs.</p>
-    </section>
-    <section class="g-card">
-      <h2>Exports &amp; Console Debugging</h2>
+      <h2>2. Intermediate Kinematics, Trajectory &amp; Stability</h2>
       <ul>
-        <li>Export URDF XML or DH parameter JSON from the workbench controls, or share pose state via URL hash.</li>
-        <li>Open DevTools (<code>F12</code>) -&gt; <strong>Console</strong> to inspect <code>window.__wbTools</code>.</li>
+        <li>Switch presets (ABB-style 6-axis, UR5e, or lab rig) to compare link frames and reach.</li>
+        <li>Sample quintic waypoints for smooth joint trajectories and check CoM support projection.</li>
+      </ul>
+    </section>
+    <section class="g-card">
+      <h2>3. Pro Exports, Bridge &amp; Console Debugging</h2>
+      <ul>
+        <li>Export URDF XML or DH parameter JSON, copy shareable URL hash poses, or hook serial/WebSocket bridges.</li>
+        <li>Run <code>node --check</code> on <code>js/*.js</code> before pushing, and inspect <code>window.__wbTools</code> in DevTools Console (<code>F12</code>).</li>
       </ul>
       <pre><code>window.__wbTools
 window.__wbTools?.setPerfTier?.("balanced")</code></pre>

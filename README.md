@@ -1,11 +1,11 @@
 # Robotics Workbench
 
 > **Live Demo:** https://smrth097.github.io/robotics-workbench/  
-> **Interactive User & Lab Guide:** https://smrth097.github.io/robotics-workbench/guide.html
+> **Beginner-to-Pro Guide:** https://smrth097.github.io/robotics-workbench/guide.html
 
-Interactive 3D robotics kinematics, trajectory planning, and hardware-bridge workbench built with vanilla ES modules and Three.js—running zero-build directly on GitHub Pages.
+Interactive 3D robotics kinematics, trajectory planning, and hardware-bridge workbench built with ES modules and Three.js.
 
-## Supported Robot Presets
+## Robot Presets
 
 | Preset | DOF | Kinematics / Reach | Typical Use Case |
 | :--- | :---: | :--- | :--- |
@@ -15,30 +15,24 @@ Interactive 3D robotics kinematics, trajectory planning, and hardware-bridge wor
 
 ## Key Features
 
-- **Real-Time 3D Viewport & Direct Joint Jogging:** Click-and-drag robot links directly in the Three.js scene via raycasting or fine-tune joint angles using the control sliders.
-- **Visible Performance Mode Selector:** Switch dynamically between **Ultra**, **Balanced**, and **Lite** modes from the top-right bar to scale pixel ratio and frame budget.
-- **Motion & Stability Analysis:** Quintic polynomial waypoint sampling, joint-space interpolation, and Center-of-Mass (CoM) support-polygon projection.
-- **Model & Hardware Exports:** Export **URDF** XML and **Denavit-Hartenberg (DH)** JSON definitions, shareable URL hash states, and serial/WebSocket bridge hooks.
-- **Beginner-to-Pro Guide (`guide.html` & `GUIDE.md`):** Setup, joint jogging, trajectory planning, performance modes, exports, and browser console debugging.
+- **3D Viewport & Joint Jogging:** Drag robot links directly in 3D via raycasting or adjust joint sliders.
+- **Performance Mode Selector:** Switch between **Ultra**, **Balanced**, and **Lite** tiers from the bottom-right bar (`wb-perf-bar`).
+- **Motion & Stability:** Quintic waypoint sampling and Center-of-Mass (CoM) support projection.
+- **Exports & Bridge:** URDF XML and DH JSON exports, shareable URL hash state, and serial/WebSocket bridge hooks.
+- **Beginner-to-Pro Guide:** Available on `guide.html` and in `GUIDE.md`.
 
-## System Architecture
+## Repository Layout
 
 ```text
 robotics-workbench/
-├── index.html          # Main 3D workbench UI, viewport canvas, controls & performance selector
-├── guide.html          # Beginner-to-pro interactive documentation page
-├── GUIDE.md            # Markdown technical reference
-├── styles.css          # Layout, panel styling, responsive controls
-└── js/
-    ├── main.js         # UI bindings, preset switching, exports, URL hash & __wbTools API
-    ├── workbench3d.js  # Three.js scene, camera rig, robot hierarchy & raycast joint dragging
-    ├── perf.js         # Frame timing monitor & dynamic quality/DPR tier controller
-    └── ...             # Kinematics, motion planner, and bridge helper modules
+├── index.html          # Main 3D workbench UI, canvas, controls & Perf/Guide bar
+├── guide.html          # Beginner-to-pro interactive guide page
+├── GUIDE.md            # Detailed technical reference
+├── styles.css          # Layout and panel styles
+└── js/                 # ES modules (main.js, workbench3d.js, perf.js, etc.)
 ```
 
-## `window.__wbTools` Console API
-
-Open DevTools (`F12` -> **Console**) on the live workbench to inspect or control state via `window.__wbTools`:
+## `window.__wbTools` Console Helpers
 
 ```js
 console.log(window.__wbTools);
@@ -47,9 +41,7 @@ window.__wbTools?.exportDH?.();
 window.__wbTools?.exportURDF?.();
 ```
 
-## Local Development & Verification
-
-Serve over HTTP rather than `file://` because the app uses `<script type="module">`:
+## Local Check & Server
 
 ```bash
 for f in js/*.js; do echo "=== $f ==="; node --check "$f"; done
