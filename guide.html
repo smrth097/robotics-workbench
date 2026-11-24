@@ -3,60 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Robotics Workbench — Beginner-to-Pro Guide</title>
+  <title>Robotics Workbench — Complete Scratch-to-Advanced Guide</title>
   <link rel="icon" href="data:image/svg+xml," />
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; min-height: 100vh; background: #060b14; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; line-height: 1.55; }
     body { padding: 24px 16px 64px; overflow-y: auto; }
-    .g-wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 18px; }
+    .g-wrap { max-width: 940px; margin: 0 auto; display: grid; gap: 18px; }
     .g-card { background: rgba(15, 23, 42, 0.94); border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 14px; padding: 20px 24px; }
-    .g-card h1, .g-card h2, .g-card h3 { margin: 0 0 8px; color: #f8fafc; }
+    .g-card h1, .g-card h2 { margin: 0 0 8px; color: #f8fafc; }
     .g-card p, .g-card ul { margin: 0; color: #cbd5e1; }
     .g-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
     .g-top > div { flex: 1 1 260px; min-width: 0; }
     .g-btn { display: inline-flex; align-items: center; padding: 9px 15px; border-radius: 8px; background: #38bdf8; color: #04121d; text-decoration: none; font-weight: 700; font-size: 14px; white-space: nowrap; flex-shrink: 0; }
-    .g-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
-    .g-box { background: rgba(30, 41, 59, 0.72); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 10px; padding: 14px; }
+    .g-btn:hover { background: #7dd3fc; }
     ul { padding-left: 20px; margin-top: 8px; }
-    li { margin-bottom: 6px; }
+    li { margin-bottom: 7px; }
     code { background: rgba(30, 41, 59, 0.9); color: #7dd3fc; padding: 2px 6px; border-radius: 5px; }
     pre { background: #020617; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow-x: auto; border: 1px solid rgba(148, 163, 184, 0.2); margin: 10px 0 0; }
     pre code { background: none; color: inherit; padding: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.18); vertical-align: top; }
+    th { color: #f8fafc; }
   </style>
 </head>
 <body>
   <main class="g-wrap">
     <section class="g-card g-top">
       <div>
-        <h1>Robotics Workbench — Beginner-to-Pro Guide</h1>
-        <p>Setup, joint jogging, performance modes, trajectory/CoM checks, exports, and console debugging.</p>
+        <h1>Robotics Workbench — Complete Scratch-to-Advanced Guide</h1>
+        <p>Full workflow from scratch setup and joint jogging to kinematics, quintic trajectories, exports, console tools, and a 45-minute lab activity.</p>
       </div>
       <a class="g-btn" href="./index.html">Back to Workbench</a>
     </section>
     <section class="g-card">
-      <h2>1. Beginner Setup &amp; Viewport Controls</h2>
-      <div class="g-grid">
-        <div class="g-box"><h3>Camera</h3><p>Left-drag empty space to orbit, right-drag or two-finger drag to pan, scroll or pinch to zoom.</p></div>
-        <div class="g-box"><h3>Joint Jogging</h3><p>Drag links directly in 3D or adjust joint sliders within mechanical limits.</p></div>
-        <div class="g-box"><h3>Performance Modes</h3><p>Pick <strong>Ultra</strong>, <strong>Balanced</strong>, or <strong>Lite</strong> from the <strong>Perf</strong> selector in the bottom-right corner.</p></div>
-      </div>
-    </section>
-    <section class="g-card">
-      <h2>2. Intermediate Kinematics, Trajectory &amp; Stability</h2>
+      <h2>1. Beginner: Scratch Setup, Camera &amp; Joint Jogging</h2>
       <ul>
-        <li>Switch presets (ABB-style 6-axis, UR5e, or lab rig) to compare link frames and reach.</li>
-        <li>Sample quintic waypoints for smooth joint trajectories and check CoM support projection.</li>
+        <li><strong>Serve over HTTP:</strong> Run <code>python3 -m http.server 8080</code> and open <code>http://localhost:8080</code> so ES modules load properly.</li>
+        <li><strong>Viewport navigation:</strong> Left-drag empty space to orbit, right-drag or two-finger drag to pan, and scroll or pinch to zoom.</li>
+        <li><strong>Joint jogging:</strong> Drag robot links directly in 3D or adjust joint sliders within mechanical limits.</li>
+        <li><strong>Performance selector:</strong> Use the <strong>Perf</strong> dropdown (<code>Auto</code> / <code>Ultra</code> / <code>Balanced</code> / <code>Lite</code>) in the top-right bar to adjust rendering load.</li>
       </ul>
     </section>
     <section class="g-card">
-      <h2>3. Pro Exports, Bridge &amp; Console Debugging</h2>
+      <h2>2. Intermediate: Kinematics, Trajectories &amp; CoM Stability</h2>
       <ul>
-        <li>Export URDF XML or DH parameter JSON, copy shareable URL hash poses, or hook serial/WebSocket bridges.</li>
-        <li>Run <code>node --check</code> on <code>js/*.js</code> before pushing, and inspect <code>window.__wbTools</code> in DevTools Console (<code>F12</code>).</li>
+        <li><strong>Presets &amp; reach:</strong> Compare robot presets (ABB-style 6-axis, UR5e, or lab rigs) to inspect joint frames, reach, and posture.</li>
+        <li><strong>Quintic waypoint sampling:</strong> Generate smooth joint trajectories with continuous position, velocity, and acceleration profiles.</li>
+        <li><strong>CoM projection:</strong> Check Center-of-Mass support projection to evaluate static balance across poses.</li>
       </ul>
-      <pre><code>window.__wbTools
-window.__wbTools?.setPerfTier?.("balanced")</code></pre>
+    </section>
+    <section class="g-card">
+      <h2>3. Advanced: Exports, URL Hash, Bridges &amp; Console Tools</h2>
+      <ul>
+        <li><strong>Exports &amp; bridge:</strong> Export URDF XML and Denavit-Hartenberg (DH) JSON, copy shareable URL hash poses, and hook serial/WebSocket bridges.</li>
+        <li><strong>DevTools &amp; <code>window.__wbTools</code>:</strong> Open DevTools (<code>F12</code>) -&gt; <strong>Console</strong> to inspect <code>window.__wbTools</code>, and hard-refresh (<code>Ctrl + Shift + R</code> with <strong>Disable cache</strong> checked) after updates.</li>
+      </ul>
+      <pre><code>for f in js/*.js; do node --check "$f"; done
+window.__wbTools
+window.__wbTools?.setPerfTier?.("auto")</code></pre>
+    </section>
+    <section class="g-card">
+      <h2>4. 45-Minute Hands-On Lab Activity</h2>
+      <table>
+        <thead><tr><th>Time</th><th>Activity Block</th><th>What to Do &amp; Check</th></tr></thead>
+        <tbody>
+          <tr><td><strong>00-10 min</strong></td><td>Setup &amp; Viewport</td><td>Start <code>python3 -m http.server 8080</code>, orbit/pan/zoom, jog joints via sliders and 3D drag, and test <code>Auto</code> / <code>Ultra</code> / <code>Balanced</code> / <code>Lite</code> in <strong>Perf</strong>.</td></tr>
+          <tr><td><strong>10-22 min</strong></td><td>Presets, Reach &amp; CoM</td><td>Switch presets, move between extended and compact poses, and check joint limits and CoM stability projection.</td></tr>
+          <tr><td><strong>22-34 min</strong></td><td>Quintic Motion &amp; Exports</td><td>Sample quintic waypoints for smooth motion, then export URDF XML and DH JSON and inspect joint/link entries.</td></tr>
+          <tr><td><strong>34-45 min</strong></td><td>Console &amp; Syntax Check</td><td>Inspect <code>window.__wbTools</code> in Chrome DevTools Console (<code>F12</code>) and verify <code>node --check js/*.js</code> passes cleanly.</td></tr>
+        </tbody>
+      </table>
     </section>
   </main>
 </body>
