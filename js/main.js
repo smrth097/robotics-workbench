@@ -180,76 +180,76 @@ function loop() {
 }
 requestAnimationFrame(loop);
 
-function applyWorkbenchPerfTier(tier) {
-  const allowed = ["auto", "ultra", "balanced", "lite"];
-  const mode = allowed.includes(tier) ? tier : "auto";
-  try { localStorage.setItem("wb_perf_tier", mode); } catch (_) {}
-  const nativeDpr = Math.max(1, window.devicePixelRatio || 1);
-  const mem = navigator.deviceMemory || 4;
-  const cores = navigator.hardwareConcurrency || 4;
-  let activeProfile = mode;
-  if (mode === "auto") {
-    activeProfile = (mem <= 4 || cores <= 4) ? "lite" : "balanced";
-  }
-  const targetDpr =
-    activeProfile === "ultra" ? Math.min(nativeDpr, 2) :
-    activeProfile === "balanced" ? Math.min(nativeDpr, 1.5) : 1;
-  const c = document.querySelector("canvas");
-  if (c && c.__renderer && typeof c.__renderer.setPixelRatio === "function") {
-    c.__renderer.setPixelRatio(targetDpr);
-  }
-  window.__wbPerfState = { mode, activeProfile, pixelRatio: targetDpr };
-  window.dispatchEvent(new CustomEvent("wb:perf-tier-change", {
-    detail: { tier: mode, activeTier: activeProfile, pixelRatio: targetDpr }
-  }));
-  return mode;
-}
+(function initLowResourceAutoPerf() {
+  const MAX_ACTIVE_DPR = 1.25;
+  const IDLE_DPR = 0.85;
+  const ACTIVE_WINDOW_MS = 1200;
+  const IDLE_FRAME_MS = 55;
+  const ACTIVE_FRAME_MS = 24;
 
-(function startAutoPerfMonitor() {
-  let lastTs = performance.now();
-  let slowFrames = 0;
-  let fastFrames = 0;
-  function tick(now) {
-    const dt = now - lastTs;
-    lastTs = now;
-    const sel = document.getElementById("perfTierSelect");
-    const mode = sel?.value || window.__wbPerfState?.mode || "auto";
-    if (mode === "auto" && dt > 0 && dt < 250) {
-      const nativeDpr = Math.max(1, window.devicePixelRatio || 1);
-      const cur = window.__wbPerfState?.activeProfile || "balanced";
-      if (dt > 24) { slowFrames++; fastFrames = 0; } else if (dt < 14) { fastFrames++; slowFrames = 0; }
-      if (slowFrames >= 20 && cur !== "lite") {
-        slowFrames = 0;
-        const next = cur === "ultra" ? "balanced" : "lite";
-        const dpr = next === "balanced" ? Math.min(nativeDpr, 1.5) : 1;
-        const c = document.querySelector("canvas");
-        if (c && c.__renderer && typeof c.__renderer.setPixelRatio === "function") c.__renderer.setPixelRatio(dpr);
-        window.__wbPerfState = { mode: "auto", activeProfile: next, pixelRatio: dpr };
-      } else if (fastFrames >= 90 && cur === "lite" && (navigator.deviceMemory || 4) >= 6) {
-        fastFrames = 0;
-        const dpr = Math.min(nativeDpr, 1.5);
-        const c = document.querySelector("canvas");
-        if (c && c.__renderer && typeof c.__renderer.setPixelRatio === "function") c.__renderer.setPixelRatio(dpr);
-        window.__wbPerfState = { mode: "auto", activeProfile: "balanced", pixelRatio: dpr };
-      }
+  let lastActiveAt = performance.now();
+  let lastRenderAt = 0;
+  let currentTier = "eco";
+  let currentDpr = 1;
+
+  function markActive() {
+    lastActiveAt = performance.now();
+  }
+
+  function applyProfile(profile, dpr) {
+    currentTier = profile;
+    currentDpr = dpr;
+    const c = document.querySelector("canvas");
+    if (c && c.__renderer && typeof c.__renderer.setPixelRatio === "function") {
+      c.__renderer.setPixelRatio(dpr);
     }
-    requestAnimationFrame(tick);
+    const badge = document.getElementById("wbPerfStatus");
+    if (badge) {
+      badge.textContent = profile === "idle" ? "Perf: Auto (Idle)" : profile === "active" ? "Perf: Auto (Active)" : "Perf: Auto (Eco)";
+    }
+    window.__wbPerfState = { mode: "auto", profile, pixelRatio: dpr, capped: true };
+    window.dispatchEvent(new CustomEvent("wb:perf-tier-change", {
+      detail: { tier: "auto", profile, pixelRatio: dpr }
+    }));
   }
-  requestAnimationFrame(tick);
+
+  function evaluate(now) {
+    const hidden = document.hidden;
+    const idle = hidden || (now - lastActiveAt > ACTIVE_WINDOW_MS);
+    const nativeDpr = Math.max(1, window.devicePixelRatio || 1);
+    if (hidden) {
+      applyProfile("idle", 0.75);
+      return;
+    }
+    if (idle) {
+      applyProfile("idle", Math.min(nativeDpr, IDLE_DPR));
+      return;
+    }
+    const lowSpec = (navigator.deviceMemory || 4) <= 4 || (navigator.hardwareConcurrency || 4) <= 4;
+    const activeCap = lowSpec ? 1.0 : MAX_ACTIVE_DPR;
+    applyProfile("active", Math.min(nativeDpr, activeCap));
+  }
+
+  for (const ev of ["pointerdown", "pointermove", "wheel", "keydown", "touchstart", "input", "change"]) {
+    window.addEventListener(ev, markActive, { passive: true });
+  }
+  document.addEventListener("visibilitychange", () => evaluate(performance.now()));
+
+  window.__wbTools = Object.assign(window.__wbTools || {}, {
+    getPerfMode: () => "auto",
+    getPerfState: () => window.__wbPerfState || { mode: "auto", profile: currentTier, pixelRatio: currentDpr, capped: true },
+    pokePerf: markActive
+  });
+
+  function loop(now) {
+    const budget = document.hidden ? 150 : ((now - lastActiveAt > ACTIVE_WINDOW_MS) ? IDLE_FRAME_MS : ACTIVE_FRAME_MS);
+    if (now - lastRenderAt >= budget) {
+      lastRenderAt = now;
+      evaluate(now);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  applyProfile("eco", 1);
+  requestAnimationFrame(loop);
 })();
-
-window.__wbTools = Object.assign(window.__wbTools || {}, {
-  setPerfTier: applyWorkbenchPerfTier,
-  getPerfTier: () => document.getElementById("perfTierSelect")?.value || "auto",
-  getPerfState: () => window.__wbPerfState || { mode: "auto", activeProfile: "balanced", pixelRatio: 1 }
-});
-
-window.addEventListener("DOMContentLoaded", () => {
-  const sel = document.getElementById("perfTierSelect");
-  if (!sel) return;
-  let saved = "auto";
-  try { saved = localStorage.getItem("wb_perf_tier") || "auto"; } catch (_) {}
-  if (["auto", "ultra", "balanced", "lite"].includes(saved)) sel.value = saved;
-  applyWorkbenchPerfTier(sel.value);
-  sel.addEventListener("change", (e) => applyWorkbenchPerfTier(e.target.value));
-});
