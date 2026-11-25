@@ -130,8 +130,26 @@
     #wb-perf-bar { top: auto !important; bottom: 8px !important; right: 8px !important; left: auto !important; font-size: 11px !important; padding: 3px 7px !important; }
   }
 </style>
-<div id="wb-perf-bar" style="position:fixed;top:48px;right:12px;z-index:9999;display:inline-flex;align-items:center;gap:6px;background:rgba(15,23,42,0.92);border:1px solid rgba(148,163,184,0.3);padding:4px 8px;border-radius:8px;font:500 11.5px/1.1 system-ui,sans-serif;color:#cbd5e1;">
+<a id="wb-guide-link" href="./guide.html" style="display:inline-flex;align-items:center;margin-right:8px;background:rgba(15,23,42,0.92);color:#38bdf8;border:1px solid rgba(56,189,248,0.45);padding:4px 9px;border-radius:8px;font:600 11.5px/1.1 system-ui,sans-serif;text-decoration:none;vertical-align:middle;">Guide</a>
+<div id="wb-perf-bar" style="display:inline-flex;align-items:center;gap:6px;margin-right:8px;background:rgba(15,23,42,0.92);border:1px solid rgba(148,163,184,0.3);padding:4px 8px;border-radius:8px;font:500 11.5px/1.1 system-ui,sans-serif;color:#cbd5e1;vertical-align:middle;">
   <span id="wbPerfStatus" style="white-space:nowrap;">Perf: Auto</span>
 </div>
+<script id="wb-perf-left-of-pause">
+  (function placeControls() {
+    const bar = document.getElementById("wb-perf-bar");
+    const guide = document.getElementById("wb-guide-link");
+    const pauseBtn = Array.from(document.querySelectorAll("button, [role=button], a")).find((el) => /^pause$/i.test((el.textContent || "").trim()));
+    const header = document.querySelector("header, nav, .topbar, .top-bar, .nav-bar");
+    if (pauseBtn && pauseBtn.parentElement) {
+      if (bar) pauseBtn.parentElement.insertBefore(bar, pauseBtn);
+      if (guide) pauseBtn.parentElement.insertBefore(guide, bar || pauseBtn);
+      return;
+    }
+    if (header) {
+      if (guide) header.appendChild(guide);
+      if (bar) header.appendChild(bar);
+    }
+  })();
+</script>
 </body>
 </html>
